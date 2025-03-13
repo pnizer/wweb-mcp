@@ -1,0 +1,8 @@
+---
+description: When execute the npm command
+globs: 
+alwaysApply: false
+---
+# Your rule content
+
+- Always execute the command `nvm use` before any node related command like `node` or `npm` in a new terminal

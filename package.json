@@ -1,0 +1,37 @@
+{
+  "name": "wweb-mcp",
+  "version": "0.1.0",
+  "main": "dist/main.js",
+  "bin": {
+    "wweb-mcp": "bin/wweb-mcp.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/main.ts",
+    "watch": "tsc -w",
+    "serve": "nodemon --watch dist/ dist/main.js",
+    "clean-auth": "node scripts/clean-auth.js",
+    "puppeteer": "ts-node src/puppeteer.ts"
+  },
+  "author": "Philippe Nizer",
+  "license": "MIT",
+  "description": "WhatsApp Web MCP Server",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "express": "^5.0.1",
+    "puppeteer": "^18.2.1",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^20.13.1",
+    "@types/qrcode": "^1.5.5",
+    "@types/qrcode-terminal": "^0.12.2",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
