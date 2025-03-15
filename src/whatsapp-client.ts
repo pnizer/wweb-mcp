@@ -3,25 +3,39 @@ import qrcode from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import fs from 'fs';
 
-export function createWhatsAppClient(qrCodeFileName: string | undefined = undefined) {
+// Configuration interface
+export interface WhatsAppConfig {
+  qrCodeFile?: string;
+  authDataPath?: string;
+  authStrategy?: 'local' | 'none';
+  dockerContainer?: boolean;
+}
+
+export function createWhatsAppClient(config: WhatsAppConfig = {}) {
+    const authDataPath = config.authDataPath || '.wwebjs_auth';
+    
     // remove Chrome lock file if it exists
-    fs.rmSync(process.env.AUTH_DATA_PATH + '/SingletonLock', { force: true });
+    try {
+        fs.rmSync(authDataPath + '/SingletonLock', { force: true });
+    } catch (error) {
+        // Ignore if file doesn't exist
+    }
 
     const npx_args = { headless: true }
     const docker_args = { 
         headless: true,
-        userDataDir: process.env.AUTH_DATA_PATH || '.wwebjs_auth',
+        userDataDir: authDataPath,
         args: ["--no-sandbox", "--single-process", "--no-zygote"] 
     }
 
-    const authStrategy = process.env.AUTH_STRATEGY === 'local' && process.env.DOCKER_CONTAINER !== 'true'
+    const authStrategy = config.authStrategy === 'local' && !config.dockerContainer
     ? new LocalAuth({
-        dataPath: process.env.AUTH_DATA_PATH || '.wwebjs_auth'
+        dataPath: authDataPath
       })
     : new NoAuth();
     
     console.error('authStrategy', authStrategy);
-    const puppeteer = process.env.DOCKER_CONTAINER ? docker_args : npx_args;
+    const puppeteer = config.dockerContainer ? docker_args : npx_args;
     console.error('puppeteer', puppeteer);
 
   const client = new Client({
@@ -33,15 +47,15 @@ export function createWhatsAppClient(qrCodeFileName: string | undefined = undefi
   // Generate QR code when needed
   client.on('qr', (qr: string) => {
     // If filename is provided, save QR code to file
-    if (qrCodeFileName) {
-      QRCode.toFile(qrCodeFileName, qr, {
+    if (config.qrCodeFile) {
+      QRCode.toFile(config.qrCodeFile, qr, {
         errorCorrectionLevel: 'H',
         type: 'png',
       }, (err) => {
         if (err) {
           console.error('Failed to save QR code to file:', err);
         } else {
-          console.error(`QR code saved to file: ${qrCodeFileName}`);
+          console.error(`QR code saved to file: ${config.qrCodeFile}`);
         }
       });
     } else {
