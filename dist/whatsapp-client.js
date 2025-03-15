@@ -8,22 +8,28 @@ const whatsapp_web_js_1 = require("whatsapp-web.js");
 const qrcode_terminal_1 = __importDefault(require("qrcode-terminal"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const fs_1 = __importDefault(require("fs"));
-function createWhatsAppClient(qrCodeFileName = undefined) {
+function createWhatsAppClient(config = {}) {
+    const authDataPath = config.authDataPath || '.wwebjs_auth';
     // remove Chrome lock file if it exists
-    fs_1.default.rmSync(process.env.AUTH_DATA_PATH + '/SingletonLock', { force: true });
+    try {
+        fs_1.default.rmSync(authDataPath + '/SingletonLock', { force: true });
+    }
+    catch (error) {
+        // Ignore if file doesn't exist
+    }
     const npx_args = { headless: true };
     const docker_args = {
         headless: true,
-        userDataDir: process.env.AUTH_DATA_PATH || '.wwebjs_auth',
+        userDataDir: authDataPath,
         args: ["--no-sandbox", "--single-process", "--no-zygote"]
     };
-    const authStrategy = process.env.AUTH_STRATEGY === 'local' && process.env.DOCKER_CONTAINER !== 'true'
+    const authStrategy = config.authStrategy === 'local' && !config.dockerContainer
         ? new whatsapp_web_js_1.LocalAuth({
-            dataPath: process.env.AUTH_DATA_PATH || '.wwebjs_auth'
+            dataPath: authDataPath
         })
         : new whatsapp_web_js_1.NoAuth();
     console.error('authStrategy', authStrategy);
-    const puppeteer = process.env.DOCKER_CONTAINER ? docker_args : npx_args;
+    const puppeteer = config.dockerContainer ? docker_args : npx_args;
     console.error('puppeteer', puppeteer);
     const client = new whatsapp_web_js_1.Client({
         puppeteer,
@@ -33,8 +39,8 @@ function createWhatsAppClient(qrCodeFileName = undefined) {
     // Generate QR code when needed
     client.on('qr', (qr) => {
         // If filename is provided, save QR code to file
-        if (qrCodeFileName) {
-            qrcode_1.default.toFile(qrCodeFileName, qr, {
+        if (config.qrCodeFile) {
+            qrcode_1.default.toFile(config.qrCodeFile, qr, {
                 errorCorrectionLevel: 'H',
                 type: 'png',
             }, (err) => {
@@ -42,7 +48,7 @@ function createWhatsAppClient(qrCodeFileName = undefined) {
                     console.error('Failed to save QR code to file:', err);
                 }
                 else {
-                    console.error(`QR code saved to file: ${qrCodeFileName}`);
+                    console.error(`QR code saved to file: ${config.qrCodeFile}`);
                 }
             });
         }

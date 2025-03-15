@@ -19,11 +19,13 @@
   "description": "WhatsApp Web MCP Server",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
+    "@types/yargs": "^17.0.33",
     "express": "^5.0.1",
     "puppeteer": "^18.2.1",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.26.0"
+    "whatsapp-web.js": "^1.26.0",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
