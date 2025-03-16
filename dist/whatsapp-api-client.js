@@ -6,12 +6,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WhatsAppApiClient = void 0;
 const axios_1 = __importDefault(require("axios"));
 class WhatsAppApiClient {
-    constructor(baseUrl = 'http://localhost:3000/api') {
+    constructor(baseUrl, apiKey) {
         this.baseUrl = baseUrl;
+        this.apiKey = apiKey;
+        this.axiosInstance = axios_1.default.create({
+            baseURL: this.baseUrl,
+            headers: {
+                Authorization: `Bearer ${this.apiKey}`,
+            },
+        });
     }
     async getStatus() {
         try {
-            const response = await axios_1.default.get(`${this.baseUrl}/status`);
+            const response = await this.axiosInstance.get('/status');
             return response.data;
         }
         catch (error) {
@@ -20,7 +27,7 @@ class WhatsAppApiClient {
     }
     async getContacts() {
         try {
-            const response = await axios_1.default.get(`${this.baseUrl}/contacts`);
+            const response = await this.axiosInstance.get('/contacts');
             return response.data;
         }
         catch (error) {
@@ -29,7 +36,7 @@ class WhatsAppApiClient {
     }
     async searchContacts(query) {
         try {
-            const response = await axios_1.default.get(`${this.baseUrl}/contacts/search`, {
+            const response = await this.axiosInstance.get('/contacts/search', {
                 params: { query },
             });
             return response.data;
@@ -40,7 +47,7 @@ class WhatsAppApiClient {
     }
     async getChats() {
         try {
-            const response = await axios_1.default.get(`${this.baseUrl}/chats`);
+            const response = await this.axiosInstance.get('/chats');
             return response.data;
         }
         catch (error) {
@@ -49,7 +56,7 @@ class WhatsAppApiClient {
     }
     async getMessages(number, limit = 10) {
         try {
-            const response = await axios_1.default.get(`${this.baseUrl}/messages/${number}`, {
+            const response = await this.axiosInstance.get(`/messages/${number}`, {
                 params: { limit },
             });
             return response.data;
@@ -60,7 +67,7 @@ class WhatsAppApiClient {
     }
     async sendMessage(number, message) {
         try {
-            const response = await axios_1.default.post(`${this.baseUrl}/send`, {
+            const response = await this.axiosInstance.post('/send', {
                 number,
                 message,
             });

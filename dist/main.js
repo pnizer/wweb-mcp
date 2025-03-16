@@ -46,6 +46,9 @@ const helpers_1 = require("yargs/helpers");
 const logger_1 = __importStar(require("./logger"));
 const middleware_1 = require("./middleware");
 const api_1 = require("./api");
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const crypto_1 = __importDefault(require("crypto"));
 const isDockerContainer = process.env.DOCKER_CONTAINER === 'true';
 function parseCommandLineArgs() {
     return (0, yargs_1.default)((0, helpers_1.hideBin)(process.argv))
@@ -96,9 +99,15 @@ function parseCommandLineArgs() {
     })
         .option('api-base-url', {
         alias: 'b',
-        description: 'API base URL for MCP when using api mode',
+        description: 'Base URL for WhatsApp Web REST API when using api mode',
         type: 'string',
         default: 'http://localhost:3001/api',
+    })
+        .option('api-key', {
+        alias: 'k',
+        description: 'API key for WhatsApp Web REST API when using api mode',
+        type: 'string',
+        default: '',
     })
         .option('log-level', {
         alias: 'l',
@@ -127,6 +136,7 @@ function createConfigurations(argv) {
     const mcpConfig = {
         useApiClient: argv['mcp-mode'] === 'api',
         apiBaseUrl: argv['api-base-url'],
+        apiKey: argv['api-key'],
         whatsappConfig: whatsAppConfig,
     };
     return { whatsAppConfig, mcpConfig };
@@ -162,13 +172,39 @@ async function startMcpCommandServer(server, mode) {
         logger_1.default.error('Error connecting to MCP server', error);
     }
 }
+async function getWhatsAppApiKey(whatsAppConfig) {
+    if (whatsAppConfig.authStrategy === 'none') {
+        return crypto_1.default.randomBytes(32).toString('hex');
+    }
+    const authDataPath = whatsAppConfig.authDataPath;
+    if (!authDataPath) {
+        throw new Error('The auth-data-path is required when using whatsapp-api mode');
+    }
+    const apiKeyPath = path_1.default.join(authDataPath, 'api_key.txt');
+    if (!fs_1.default.existsSync(apiKeyPath)) {
+        const apiKey = crypto_1.default.randomBytes(32).toString('hex');
+        fs_1.default.writeFileSync(apiKeyPath, apiKey);
+        return apiKey;
+    }
+    return fs_1.default.readFileSync(apiKeyPath, 'utf8');
+}
 async function startWhatsAppApiServer(whatsAppConfig, port) {
-    logger_1.default.info('Starting WhatsApp Web Client API...');
+    logger_1.default.info('Starting WhatsApp Web REST API...');
     const client = (0, whatsapp_client_1.createWhatsAppClient)(whatsAppConfig);
     await client.initialize();
+    const apiKey = await getWhatsAppApiKey(whatsAppConfig);
+    logger_1.default.info(`WhatsApp API key: ${apiKey}`);
     const app = (0, express_1.default)();
     app.use(middleware_1.requestLogger);
     app.use(express_1.default.json());
+    app.use((req, res, next) => {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || authHeader !== `Bearer ${apiKey}`) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+        next();
+    });
     app.use('/api', (0, api_1.routerFactory)(client));
     app.use(middleware_1.errorHandler);
     app.listen(port, () => {
@@ -184,7 +220,7 @@ async function startWhatsAppApiServer(whatsAppConfig, port) {
 async function startMcpServer(mcpConfig, transport, port, mode) {
     let client = null;
     if (mode === 'standalone') {
-        logger_1.default.info('Starting WhatsApp Web Client API...');
+        logger_1.default.info('Starting WhatsApp Web Client...');
         client = (0, whatsapp_client_1.createWhatsAppClient)(mcpConfig.whatsappConfig);
         await client.initialize();
     }

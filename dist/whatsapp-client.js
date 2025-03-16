@@ -38,9 +38,8 @@ function createWhatsAppClient(config = {}) {
     client.on('qr', (qr) => {
         // Display QR code in terminal
         qrcode_terminal_1.default.generate(qr, { small: true }, qrcode => {
-            logger_1.default.info(qrcode);
+            logger_1.default.info(`QR code generated. Scan it with your phone to log in.\n${qrcode}`);
         });
-        logger_1.default.info('QR code generated. Scan it with your phone to log in.');
     });
     // Handle ready event
     client.on('ready', async () => {

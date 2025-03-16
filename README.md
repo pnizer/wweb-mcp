@@ -54,6 +54,23 @@ Disclaimer from WhatsApp Web project:
 | `--auth-data-path` | `-a` | Path to store authentication data | - | `.wwebjs_auth` |
 | `--auth-strategy` | `-s` | Authentication strategy | `local`, `none` | `local` |
 | `--api-base-url` | `-b` | API base URL for MCP when using api mode | - | `http://localhost:3001/api` |
+| `--api-key` | `-k` | API key for WhatsApp Web REST API when using api mode | - | `''` |
+
+### API Key Authentication
+
+When running in API mode, the WhatsApp API server requires authentication using an API key. The API key is automatically generated when you start the WhatsApp API server and is displayed in the logs:
+
+```
+WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+```
+
+To connect the MCP server to the WhatsApp API server, you need to provide this API key using the `--api-key` or `-k` option:
+
+```bash
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+```
+
+The API key is stored in the authentication data directory (specified by `--auth-data-path`) and persists between restarts of the WhatsApp API server.
 
 ### Authentication Methods
 
@@ -86,7 +103,11 @@ npx wweb-mcp --mode mcp --mcp-mode standalone --transport sse --sse-port 3002
 #### MCP Server (API Client)
 Run an MCP server that connects to the WhatsApp API server:
 ```bash
-npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --transport sse --sse-port 3002
+# First, start the WhatsApp API server and note the API key from the logs
+npx wweb-mcp --mode whatsapp-api --api-port 3001
+
+# Then, start the MCP server with the API key
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key YOUR_API_KEY --transport sse --sse-port 3002
 ```
 
 ### Available Tools
@@ -120,7 +141,12 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 2. Scan the QR code with your WhatsApp mobile app
 
-3. Add the following to your Claude Desktop configuration:
+3. Note the API key displayed in the logs:
+   ```
+   WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+   ```
+
+4. Add the following to your Claude Desktop configuration:
    ```json
    {
        "mcpServers": {
@@ -132,7 +158,8 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
                    "-s", "local",
                    "-c", "api",
                    "-t", "command",
-                   "--api-base-url", "http://localhost:3001/api"
+                   "--api-base-url", "http://localhost:3001/api",
+                   "--api-key", "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
                ]
            }
        }
@@ -148,7 +175,12 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 2. Scan the QR code with your WhatsApp mobile app
 
-3. Add the following to your Claude Desktop configuration:
+3. Note the API key displayed in the logs:
+   ```
+   WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+   ```
+
+4. Add the following to your Claude Desktop configuration:
    ```json
    {
        "mcpServers": {
@@ -163,15 +195,16 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
                    "-s", "local",
                    "-c", "api",
                    "-t", "command",
-                   "--api-base-url", "http://host.docker.internal:3001/api"
+                   "--api-base-url", "http://host.docker.internal:3001/api",
+                   "--api-key", "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
                ]
            }
        }
    }
    ```
 
-4. Restart Claude Desktop
-5. The WhatsApp functionality will be available through Claude's interface
+5. Restart Claude Desktop
+6. The WhatsApp functionality will be available through Claude's interface
 
 ### Prompt Templates
 

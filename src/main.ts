@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import { createMcpServer, McpConfig } from './mcp-server';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -9,6 +9,9 @@ import logger, { configureForCommandMode } from './logger';
 import { requestLogger, errorHandler } from './middleware';
 import { routerFactory } from './api';
 import { Client } from 'whatsapp-web.js';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 const isDockerContainer = process.env.DOCKER_CONTAINER === 'true';
 
@@ -62,9 +65,15 @@ function parseCommandLineArgs(): ReturnType<typeof yargs.parseSync> {
     })
     .option('api-base-url', {
       alias: 'b',
-      description: 'API base URL for MCP when using api mode',
+      description: 'Base URL for WhatsApp Web REST API when using api mode',
       type: 'string',
       default: 'http://localhost:3001/api',
+    })
+    .option('api-key', {
+      alias: 'k',
+      description: 'API key for WhatsApp Web REST API when using api mode',
+      type: 'string',
+      default: '',
     })
     .option('log-level', {
       alias: 'l',
@@ -100,6 +109,7 @@ function createConfigurations(argv: ReturnType<typeof parseCommandLineArgs>): {
   const mcpConfig: McpConfig = {
     useApiClient: argv['mcp-mode'] === 'api',
     apiBaseUrl: argv['api-base-url'] as string,
+    apiKey: argv['api-key'] as string,
     whatsappConfig: whatsAppConfig,
   };
 
@@ -151,17 +161,44 @@ async function startMcpCommandServer(
   }
 }
 
+async function getWhatsAppApiKey(whatsAppConfig: WhatsAppConfig): Promise<string> {
+  if (whatsAppConfig.authStrategy === 'none') {
+    return crypto.randomBytes(32).toString('hex');
+  }
+  const authDataPath = whatsAppConfig.authDataPath;
+  if (!authDataPath) {
+    throw new Error('The auth-data-path is required when using whatsapp-api mode');
+  }
+  const apiKeyPath = path.join(authDataPath, 'api_key.txt');
+  if (!fs.existsSync(apiKeyPath)) {
+    const apiKey = crypto.randomBytes(32).toString('hex');
+    fs.writeFileSync(apiKeyPath, apiKey);
+    return apiKey;
+  }
+  return fs.readFileSync(apiKeyPath, 'utf8');
+}
+
 async function startWhatsAppApiServer(whatsAppConfig: WhatsAppConfig, port: number): Promise<void> {
-  logger.info('Starting WhatsApp Web Client API...');
+  logger.info('Starting WhatsApp Web REST API...');
   const client = createWhatsAppClient(whatsAppConfig);
   await client.initialize();
+
+  const apiKey = await getWhatsAppApiKey(whatsAppConfig);
+  logger.info(`WhatsApp API key: ${apiKey}`);
 
   const app = express();
   app.use(requestLogger);
   app.use(express.json());
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || authHeader !== `Bearer ${apiKey}`) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    next();
+  });
   app.use('/api', routerFactory(client));
   app.use(errorHandler);
-
   app.listen(port, () => {
     logger.info(`WhatsApp Web Client API started successfully on port ${port}`);
   });
@@ -182,7 +219,7 @@ async function startMcpServer(
 ): Promise<void> {
   let client: Client | null = null;
   if (mode === 'standalone') {
-    logger.info('Starting WhatsApp Web Client API...');
+    logger.info('Starting WhatsApp Web Client...');
     client = createWhatsAppClient(mcpConfig.whatsappConfig);
     await client.initialize();
   }

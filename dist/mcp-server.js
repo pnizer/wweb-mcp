@@ -20,7 +20,10 @@ function createMcpServer(config = {}, client = null) {
     });
     let service;
     if (config.useApiClient) {
-        service = new whatsapp_api_client_1.WhatsAppApiClient(config.apiBaseUrl);
+        if (!config.apiBaseUrl) {
+            throw new Error('API base URL is required when useApiClient is true');
+        }
+        service = new whatsapp_api_client_1.WhatsAppApiClient(config.apiBaseUrl, config.apiKey || '');
     }
     else {
         if (!client) {

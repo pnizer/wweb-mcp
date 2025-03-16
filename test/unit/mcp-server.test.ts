@@ -64,6 +64,7 @@ describe('MCP Server', () => {
     // Setup mock WhatsApp API client
     mockWhatsAppApiClient = new WhatsAppApiClient(
       'http://localhost',
+      'test-api-key'
     ) as jest.Mocked<WhatsAppApiClient>;
     (WhatsAppApiClient as jest.Mock).mockImplementation(() => mockWhatsAppApiClient);
   });

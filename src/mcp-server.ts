@@ -9,6 +9,7 @@ import { Client } from 'whatsapp-web.js';
 export interface McpConfig {
   useApiClient?: boolean;
   apiBaseUrl?: string;
+  apiKey?: string;
   whatsappConfig?: WhatsAppConfig;
 }
 
@@ -29,7 +30,10 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
   let service: WhatsAppApiClient | WhatsAppService;
 
   if (config.useApiClient) {
-    service = new WhatsAppApiClient(config.apiBaseUrl);
+    if (!config.apiBaseUrl) {
+      throw new Error('API base URL is required when useApiClient is true');
+    }
+    service = new WhatsAppApiClient(config.apiBaseUrl, config.apiKey || '');
   } else {
     if (!client) {
       throw new Error('WhatsApp client is required when useApiClient is false');

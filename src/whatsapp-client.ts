@@ -46,9 +46,8 @@ export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
   client.on('qr', (qr: string) => {
     // Display QR code in terminal
     qrcode.generate(qr, { small: true }, qrcode => {
-      logger.info(qrcode);
+      logger.info(`QR code generated. Scan it with your phone to log in.\n${qrcode}`);
     });
-    logger.info('QR code generated. Scan it with your phone to log in.');
   });
 
   // Handle ready event

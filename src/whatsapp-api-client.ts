@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import {
   StatusResponse,
   ContactResponse,
@@ -9,14 +9,23 @@ import {
 
 export class WhatsAppApiClient {
   private baseUrl: string;
+  private apiKey: string;
+  private axiosInstance: AxiosInstance;
 
-  constructor(baseUrl: string = 'http://localhost:3000/api') {
+  constructor(baseUrl: string, apiKey: string) {
     this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+    this.axiosInstance = axios.create({
+      baseURL: this.baseUrl,
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+    });
   }
 
   async getStatus(): Promise<StatusResponse> {
     try {
-      const response = await axios.get(`${this.baseUrl}/status`);
+      const response = await this.axiosInstance.get('/status');
       return response.data;
     } catch (error) {
       throw new Error(`Failed to get client status: ${error}`);
@@ -25,7 +34,7 @@ export class WhatsAppApiClient {
 
   async getContacts(): Promise<ContactResponse[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/contacts`);
+      const response = await this.axiosInstance.get('/contacts');
       return response.data;
     } catch (error) {
       throw new Error(`Failed to fetch contacts: ${error}`);
@@ -34,7 +43,7 @@ export class WhatsAppApiClient {
 
   async searchContacts(query: string): Promise<ContactResponse[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/contacts/search`, {
+      const response = await this.axiosInstance.get('/contacts/search', {
         params: { query },
       });
       return response.data;
@@ -45,7 +54,7 @@ export class WhatsAppApiClient {
 
   async getChats(): Promise<ChatResponse[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/chats`);
+      const response = await this.axiosInstance.get('/chats');
       return response.data;
     } catch (error) {
       throw new Error(`Failed to fetch chats: ${error}`);
@@ -54,7 +63,7 @@ export class WhatsAppApiClient {
 
   async getMessages(number: string, limit: number = 10): Promise<MessageResponse[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/messages/${number}`, {
+      const response = await this.axiosInstance.get(`/messages/${number}`, {
         params: { limit },
       });
       return response.data;
@@ -65,7 +74,7 @@ export class WhatsAppApiClient {
 
   async sendMessage(number: string, message: string): Promise<SendMessageResponse> {
     try {
-      const response = await axios.post(`${this.baseUrl}/send`, {
+      const response = await this.axiosInstance.post('/send', {
         number,
         message,
       });
