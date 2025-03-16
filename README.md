@@ -10,9 +10,16 @@ WhatsApp Web MCP provides a seamless integration between WhatsApp Web and AI mod
 - Providing flexible deployment options through SSE or Command modes
 - Supporting both direct WhatsApp client integration and API-based connectivity
 
+## Disclaimer
+
+**IMPORTANT**: This tool is for testing purposes only and should not be used in production environments. 
+
+Disclaimer from WhatsApp Web project:
+
+> This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or its affiliates. The official WhatsApp website can be found at whatsapp.com. "WhatsApp" as well as related names, marks, emblems and images are registered trademarks of their respective owners. Also it is not guaranteed you will not be blocked by using this method. WhatsApp does not allow bots or unofficial clients on their platform, so this shouldn't be considered totally safe.
+
 ## Installation
 
-### Installation
 1. Clone the repository:
    ```bash
    git clone https://github.com/pnizer/wweb-mcp.git
@@ -157,7 +164,6 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
                    "-s", "local",
                    "-c", "api",
                    "-t", "command",
-                   "-a", "/wwebjs_auth",
                    "--api-base-url", "http://host.docker.internal:3001/api"
                ]
            }
@@ -181,7 +187,7 @@ The project is structured with a clean separation of concerns:
 ### Components
 
 1. **WhatsAppService**: Core business logic for interacting with WhatsApp
-2. **WhatsAppApiClient**: Client for connecting to the WhatsApp API server
+2. **WhatsAppApiClient**: Client for connecting to the WhatsApp API
 3. **API Router**: Express routes for the REST API
 4. **MCP Server**: Model Context Protocol implementation
 
@@ -242,6 +248,12 @@ Please ensure your PR:
 - Includes appropriate tests
 - Updates documentation as needed
 - Describes the changes in detail
+
+## Dependencies
+
+### WhatsApp Web.js
+
+This project uses [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js), an unofficial JavaScript client library for WhatsApp Web that connects through the WhatsApp Web browser app. For more information, visit the [whatsapp-web.js GitHub repository](https://github.com/pedroslopez/whatsapp-web.js).
 
 ## License
 
