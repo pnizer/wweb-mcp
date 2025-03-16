@@ -14,7 +14,7 @@ class WhatsAppService {
             const status = this.client.info ? 'connected' : 'disconnected';
             return {
                 status,
-                info: this.client.info
+                info: this.client.info,
             };
         }
         catch (error) {
@@ -27,11 +27,9 @@ class WhatsAppService {
                 throw new Error('WhatsApp client not ready. Please try again later.');
             }
             const contacts = await this.client.getContacts();
-            const filteredContacts = contacts.filter((contact) => contact.isUser &&
-                contact.id.server === 'c.us' &&
-                !contact.isMe);
+            const filteredContacts = contacts.filter((contact) => contact.isUser && contact.id.server === 'c.us' && !contact.isMe);
             return filteredContacts.map((contact) => ({
-                name: contact.pushname || "Unknown",
+                name: contact.pushname || 'Unknown',
                 number: contact.number,
             }));
         }
@@ -41,9 +39,6 @@ class WhatsAppService {
     }
     async searchContacts(query) {
         try {
-            if (!query) {
-                throw new Error('Search query is required');
-            }
             if (!this.client.info) {
                 throw new Error('WhatsApp client not ready. Please try again later.');
             }
@@ -54,7 +49,7 @@ class WhatsAppService {
                 ((contact.pushname && contact.pushname.toLowerCase().includes(query.toLowerCase())) ||
                     (contact.number && contact.number.includes(query))));
             return filteredContacts.map((contact) => ({
-                name: contact.pushname || "Unknown",
+                name: contact.pushname || 'Unknown',
                 number: contact.number,
             }));
         }
@@ -68,14 +63,18 @@ class WhatsAppService {
                 throw new Error('WhatsApp client not ready. Please try again later.');
             }
             const chats = await this.client.getChats();
-            return chats.map((chat) => ({
-                id: chat.id._serialized,
-                name: chat.name,
-                isGroup: chat.isGroup,
-                unreadCount: chat.unreadCount,
-                timestamp: timestampToIso(chat.timestamp),
-                pinned: chat.pinned
-            }));
+            return chats.map(chat => {
+                const lastMessageTimestamp = chat.lastMessage
+                    ? timestampToIso(chat.lastMessage.timestamp)
+                    : '';
+                return {
+                    id: chat.id._serialized,
+                    name: chat.name,
+                    unreadCount: chat.unreadCount,
+                    timestamp: lastMessageTimestamp,
+                    lastMessage: chat.lastMessage ? chat.lastMessage.body : '',
+                };
+            });
         }
         catch (error) {
             throw new Error(`Failed to fetch chats: ${error instanceof Error ? error.message : String(error)}`);
@@ -86,19 +85,21 @@ class WhatsAppService {
             if (!this.client.info) {
                 throw new Error('WhatsApp client not ready. Please try again later.');
             }
-            const sanitized_number = number.toString().replace(/[- )(]/g, "");
-            const number_details = await this.client.getNumberId(sanitized_number);
-            if (!number_details) {
-                throw new Error('Mobile number is not registered on WhatsApp');
+            // Ensure number is a string
+            if (typeof number !== 'string' || number.trim() === '') {
+                throw new Error('Invalid phone number');
             }
-            const chat = await this.client.getChatById(number_details._serialized);
+            // Format the chat ID
+            const chatId = number.includes('@c.us') ? number : `${number}@c.us`;
+            // Get the chat
+            const chat = await this.client.getChatById(chatId);
             const messages = await chat.fetchMessages({ limit });
-            return messages.map((message) => ({
+            return messages.map(message => ({
                 id: message.id.id,
                 body: message.body,
                 fromMe: message.fromMe,
                 timestamp: timestampToIso(message.timestamp),
-                type: message.type
+                contact: message.fromMe ? undefined : chat.name,
             }));
         }
         catch (error) {
@@ -107,22 +108,19 @@ class WhatsAppService {
     }
     async sendMessage(number, message) {
         try {
-            if (!number || !message) {
-                throw new Error('Number and message are required');
-            }
             if (!this.client.info) {
                 throw new Error('WhatsApp client not ready. Please try again later.');
             }
-            const sanitized_number = number.toString().replace(/[- )(]/g, "");
-            const number_details = await this.client.getNumberId(sanitized_number);
-            if (!number_details) {
-                throw new Error(`Mobile number ${number} is not registered on WhatsApp`);
+            // Ensure number is a string
+            if (typeof number !== 'string' || number.trim() === '') {
+                throw new Error('Invalid phone number');
             }
-            const sendMessageData = await this.client.sendMessage(number_details._serialized, message);
+            // Format the chat ID
+            const chatId = number.includes('@c.us') ? number : `${number}@c.us`;
+            // Send the message
+            const result = await this.client.sendMessage(chatId, message);
             return {
-                success: true,
-                messageId: sendMessageData.id.id,
-                to: number
+                messageId: result.id.id,
             };
         }
         catch (error) {

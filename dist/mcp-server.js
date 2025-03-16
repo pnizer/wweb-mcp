@@ -15,9 +15,9 @@ const whatsapp_client_1 = require("./whatsapp-client");
  */
 function createMcpServer(config = {}) {
     const server = new mcp_js_1.McpServer({
-        name: "WhatsApp-Web-MCP",
-        version: "1.0.0",
-        description: "WhatsApp Web API exposed through Model Context Protocol"
+        name: 'WhatsApp-Web-MCP',
+        version: '1.0.0',
+        description: 'WhatsApp Web API exposed through Model Context Protocol',
     });
     let service;
     if (config.useApiClient) {
@@ -29,14 +29,16 @@ function createMcpServer(config = {}) {
         service = new whatsapp_service_1.WhatsAppService(client);
     }
     // Resource to list contacts
-    server.resource("contacts", "whatsapp://contacts", async (uri) => {
+    server.resource('contacts', 'whatsapp://contacts', async (uri) => {
         try {
             const contacts = await service.getContacts();
             return {
-                contents: [{
+                contents: [
+                    {
                         uri: uri.href,
-                        text: JSON.stringify(contacts, null, 2)
-                    }]
+                        text: JSON.stringify(contacts, null, 2),
+                    },
+                ],
             };
         }
         catch (error) {
@@ -44,16 +46,18 @@ function createMcpServer(config = {}) {
         }
     });
     // Resource to get chat messages
-    server.resource("messages", new mcp_js_1.ResourceTemplate("whatsapp://messages/{number}", { list: undefined }), async (uri, { number }) => {
+    server.resource('messages', new mcp_js_1.ResourceTemplate('whatsapp://messages/{number}', { list: undefined }), async (uri, { number }) => {
         try {
             // Ensure number is a string
             const phoneNumber = Array.isArray(number) ? number[0] : number;
             const messages = await service.getMessages(phoneNumber, 10);
             return {
-                contents: [{
+                contents: [
+                    {
                         uri: uri.href,
-                        text: JSON.stringify(messages, null, 2)
-                    }]
+                        text: JSON.stringify(messages, null, 2),
+                    },
+                ],
             };
         }
         catch (error) {
@@ -61,14 +65,16 @@ function createMcpServer(config = {}) {
         }
     });
     // Resource to get chat list
-    server.resource("chats", "whatsapp://chats", async (uri) => {
+    server.resource('chats', 'whatsapp://chats', async (uri) => {
         try {
             const chats = await service.getChats();
             return {
-                contents: [{
+                contents: [
+                    {
                         uri: uri.href,
-                        text: JSON.stringify(chats, null, 2)
-                    }]
+                        text: JSON.stringify(chats, null, 2),
+                    },
+                ],
             };
         }
         catch (error) {
@@ -76,115 +82,135 @@ function createMcpServer(config = {}) {
         }
     });
     // Tool to get WhatsApp connection status
-    server.tool("get_status", {}, async () => {
+    server.tool('get_status', {}, async () => {
         try {
             const status = await service.getStatus();
             return {
-                content: [{
-                        type: "text",
-                        text: `WhatsApp connection status: ${status.status}`
-                    }]
+                content: [
+                    {
+                        type: 'text',
+                        text: `WhatsApp connection status: ${status.status}`,
+                    },
+                ],
             };
         }
         catch (error) {
             return {
-                content: [{
-                        type: "text",
-                        text: `Error getting status: ${error}`
-                    }],
-                isError: true
+                content: [
+                    {
+                        type: 'text',
+                        text: `Error getting status: ${error}`,
+                    },
+                ],
+                isError: true,
             };
         }
     });
     // Tool to search contacts
-    server.tool("search_contacts", {
-        query: zod_1.z.string().describe("Search query to find contacts by name or number")
+    server.tool('search_contacts', {
+        query: zod_1.z.string().describe('Search query to find contacts by name or number'),
     }, async ({ query }) => {
         try {
             const contacts = await service.searchContacts(query);
             return {
-                content: [{
-                        type: "text",
-                        text: `Found ${contacts.length} contacts matching "${query}":\n${JSON.stringify(contacts, null, 2)}`
-                    }]
+                content: [
+                    {
+                        type: 'text',
+                        text: `Found ${contacts.length} contacts matching "${query}":\n${JSON.stringify(contacts, null, 2)}`,
+                    },
+                ],
             };
         }
         catch (error) {
             return {
-                content: [{
-                        type: "text",
-                        text: `Error searching contacts: ${error}`
-                    }],
-                isError: true
+                content: [
+                    {
+                        type: 'text',
+                        text: `Error searching contacts: ${error}`,
+                    },
+                ],
+                isError: true,
             };
         }
     });
     // Tool to get messages from a specific chat
-    server.tool("get_messages", {
-        number: zod_1.z.string().describe("The phone number to get messages from"),
-        limit: zod_1.z.number().optional().describe("The number of messages to get (default: 10)")
+    server.tool('get_messages', {
+        number: zod_1.z.string().describe('The phone number to get messages from'),
+        limit: zod_1.z.number().optional().describe('The number of messages to get (default: 10)'),
     }, async ({ number, limit = 10 }) => {
         try {
             const messages = await service.getMessages(number, limit);
             return {
-                content: [{
-                        type: "text",
-                        text: `Retrieved ${messages.length} messages from ${number}:\n${JSON.stringify(messages, null, 2)}`
-                    }]
+                content: [
+                    {
+                        type: 'text',
+                        text: `Retrieved ${messages.length} messages from ${number}:\n${JSON.stringify(messages, null, 2)}`,
+                    },
+                ],
             };
         }
         catch (error) {
             return {
-                content: [{
-                        type: "text",
-                        text: `Error getting messages: ${error}`
-                    }],
-                isError: true
+                content: [
+                    {
+                        type: 'text',
+                        text: `Error getting messages: ${error}`,
+                    },
+                ],
+                isError: true,
             };
         }
     });
     // Tool to get all chats
-    server.tool("get_chats", {}, async () => {
+    server.tool('get_chats', {}, async () => {
         try {
             const chats = await service.getChats();
             return {
-                content: [{
-                        type: "text",
-                        text: `Retrieved ${chats.length} chats:\n${JSON.stringify(chats, null, 2)}`
-                    }]
+                content: [
+                    {
+                        type: 'text',
+                        text: `Retrieved ${chats.length} chats:\n${JSON.stringify(chats, null, 2)}`,
+                    },
+                ],
             };
         }
         catch (error) {
             return {
-                content: [{
-                        type: "text",
-                        text: `Error getting chats: ${error}`
-                    }],
-                isError: true
+                content: [
+                    {
+                        type: 'text',
+                        text: `Error getting chats: ${error}`,
+                    },
+                ],
+                isError: true,
             };
         }
     });
     // Tool to send a message
-    server.tool("send_message", {
-        number: zod_1.z.string().describe("The phone number to send the message to"),
-        message: zod_1.z.string().describe("The message content to send")
+    server.tool('send_message', {
+        number: zod_1.z.string().describe('The phone number to send the message to'),
+        message: zod_1.z.string().describe('The message content to send'),
     }, async ({ number, message }) => {
         try {
             const result = await service.sendMessage(number, message);
             return {
-                content: [{
-                        type: "text",
-                        text: `Message sent successfully to ${number}. Message ID: ${result.messageId}`
-                    }]
+                content: [
+                    {
+                        type: 'text',
+                        text: `Message sent successfully to ${number}. Message ID: ${result.messageId}`,
+                    },
+                ],
             };
         }
         catch (error) {
             return {
-                content: [{
-                        type: "text",
-                        text: `Error sending message: ${error}`
-                    }],
-                isError: true
+                content: [
+                    {
+                        type: 'text',
+                        text: `Error sending message: ${error}`,
+                    },
+                ],
+                isError: true,
             };
         }
     });

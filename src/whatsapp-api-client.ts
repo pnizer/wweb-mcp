@@ -1,4 +1,11 @@
 import axios from 'axios';
+import {
+  StatusResponse,
+  ContactResponse,
+  ChatResponse,
+  MessageResponse,
+  SendMessageResponse,
+} from './types';
 
 export class WhatsAppApiClient {
   private baseUrl: string;
@@ -7,7 +14,7 @@ export class WhatsAppApiClient {
     this.baseUrl = baseUrl;
   }
 
-  async getStatus() {
+  async getStatus(): Promise<StatusResponse> {
     try {
       const response = await axios.get(`${this.baseUrl}/status`);
       return response.data;
@@ -16,7 +23,7 @@ export class WhatsAppApiClient {
     }
   }
 
-  async getContacts() {
+  async getContacts(): Promise<ContactResponse[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/contacts`);
       return response.data;
@@ -25,10 +32,10 @@ export class WhatsAppApiClient {
     }
   }
 
-  async searchContacts(query: string) {
+  async searchContacts(query: string): Promise<ContactResponse[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/contacts/search`, {
-        params: { query }
+        params: { query },
       });
       return response.data;
     } catch (error) {
@@ -36,7 +43,7 @@ export class WhatsAppApiClient {
     }
   }
 
-  async getChats() {
+  async getChats(): Promise<ChatResponse[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/chats`);
       return response.data;
@@ -45,10 +52,10 @@ export class WhatsAppApiClient {
     }
   }
 
-  async getMessages(number: string, limit: number = 10) {
+  async getMessages(number: string, limit: number = 10): Promise<MessageResponse[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/messages/${number}`, {
-        params: { limit }
+        params: { limit },
       });
       return response.data;
     } catch (error) {
@@ -56,15 +63,15 @@ export class WhatsAppApiClient {
     }
   }
 
-  async sendMessage(number: string, message: string) {
+  async sendMessage(number: string, message: string): Promise<SendMessageResponse> {
     try {
       const response = await axios.post(`${this.baseUrl}/send`, {
         number,
-        message
+        message,
       });
       return response.data;
     } catch (error) {
       throw new Error(`Failed to send message: ${error}`);
     }
   }
-} 
+}

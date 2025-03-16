@@ -5,11 +5,12 @@
     "lib": ["es2020"],
  
     /* Modules */
-    "module": "commonjs",                                /* Specify what module code is generated. */
+    "module": "CommonJS",                                /* Specify what module code is generated. */
     "rootDir": "./src",
     "moduleResolution": "node",
-    "typeRoots": ["./node_modules/@types", "./src/types"],  /* Specify multiple folders that act like './node_modules/@types'. */
+    "typeRoots": ["./node_modules/@types", "./src/types", "./test"],  /* Specify multiple folders that act like './node_modules/@types'. */
     "resolveJsonModule": true,
+    "types": ["node", "jest"],
    
     /* Emit */
     "sourceMap": true,

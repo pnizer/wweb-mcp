@@ -20,56 +20,56 @@ const argv = (0, yargs_1.default)((0, helpers_1.hideBin)(process.argv))
     description: 'Run mode: mcp or whatsapp-api',
     type: 'string',
     choices: ['mcp', 'whatsapp-api'],
-    default: 'mcp'
+    default: 'mcp',
 })
     .option('mcp-mode', {
     alias: 'c',
     description: 'MCP connection mode: standalone (direct WhatsApp client) or api (connect to WhatsApp API)',
     type: 'string',
     choices: ['standalone', 'api'],
-    default: 'standalone'
+    default: 'standalone',
 })
     .option('transport', {
     alias: 't',
     description: 'MCP transport mode: sse or command',
     type: 'string',
     choices: ['sse', 'command'],
-    default: 'sse'
+    default: 'sse',
 })
     .option('sse-port', {
     alias: 'p',
     description: 'Port for SSE server',
     type: 'number',
-    default: 3002
+    default: 3002,
 })
     .option('api-port', {
     description: 'Port for WhatsApp API server',
     type: 'number',
-    default: 3001
+    default: 3001,
 })
     .option('qr-code-file', {
     alias: 'q',
     description: 'File to save QR code to',
-    type: 'string'
+    type: 'string',
 })
     .option('auth-data-path', {
     alias: 'a',
     description: 'Path to store authentication data',
     type: 'string',
-    default: '.wwebjs_auth'
+    default: '.wwebjs_auth',
 })
     .option('auth-strategy', {
     alias: 's',
     description: 'Authentication strategy: local or none',
     type: 'string',
     choices: ['local', 'none'],
-    default: 'local'
+    default: 'local',
 })
     .option('api-base-url', {
     alias: 'b',
     description: 'API base URL for MCP when using api mode',
     type: 'string',
-    default: 'http://localhost:3001/api'
+    default: 'http://localhost:3001/api',
 })
     .help()
     .alias('help', 'h')
@@ -82,7 +82,7 @@ async function main() {
             qrCodeFile: argv['qr-code-file'],
             authDataPath: argv['auth-data-path'],
             authStrategy: argv['auth-strategy'],
-            dockerContainer: isDockerContainer
+            dockerContainer: isDockerContainer,
         };
         // Create MCP configuration from command line arguments
         const mcpConfig = {
@@ -90,7 +90,7 @@ async function main() {
             // Always eagerly initialize client
             useApiClient: argv['mcp-mode'] === 'api',
             apiBaseUrl: argv['api-base-url'],
-            whatsappConfig: whatsAppConfig
+            whatsappConfig: whatsAppConfig,
         };
         if (argv.mode === 'mcp') {
             console.error(`Starting MCP server in ${argv['mcp-mode']} mode...`);
@@ -100,12 +100,12 @@ async function main() {
             if (argv['transport'] === 'sse') {
                 const app = (0, express_1.default)();
                 let transport;
-                app.get("/sse", async (_req, res) => {
-                    console.error("Received connection");
-                    transport = new sse_js_1.SSEServerTransport("/message", res);
+                app.get('/sse', async (_req, res) => {
+                    console.error('Received connection');
+                    transport = new sse_js_1.SSEServerTransport('/message', res);
                     await server.connect(transport);
                 });
-                app.post("/message", async (req, res) => {
+                app.post('/message', async (req, res) => {
                     await transport?.handlePostMessage(req, res);
                 });
                 app.listen(argv['sse-port'], () => {
@@ -119,10 +119,10 @@ async function main() {
                     console.error(`WhatsApp MCP server started successfully in ${argv['mcp-mode']} mode`);
                 }
                 catch (error) {
-                    console.error("Error connecting to MCP server", error);
+                    console.error('Error connecting to MCP server', error);
                 }
-                process.stdin.on("close", () => {
-                    console.error("WhatsApp MCP Server closed");
+                process.stdin.on('close', () => {
+                    console.error('WhatsApp MCP Server closed');
                     server.close();
                 });
             }

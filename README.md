@@ -221,6 +221,41 @@ src/
 npm run build
 ```
 
+### Testing
+
+The project uses Jest for unit testing. To run the tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Generate test coverage report
+npm run test:coverage
+```
+
+### Linting and Formatting
+
+The project uses ESLint and Prettier for code quality and formatting:
+
+```bash
+# Run linter
+npm run lint
+
+# Fix linting issues automatically
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+
+# Validate code (lint + test)
+npm run validate
+```
+
+The linting configuration enforces TypeScript best practices and maintains consistent code style across the project.
+
 ## Troubleshooting
 
 ### Claude Desktop Integration Issues

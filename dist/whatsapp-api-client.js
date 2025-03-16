@@ -30,7 +30,7 @@ class WhatsAppApiClient {
     async searchContacts(query) {
         try {
             const response = await axios_1.default.get(`${this.baseUrl}/contacts/search`, {
-                params: { query }
+                params: { query },
             });
             return response.data;
         }
@@ -50,7 +50,7 @@ class WhatsAppApiClient {
     async getMessages(number, limit = 10) {
         try {
             const response = await axios_1.default.get(`${this.baseUrl}/messages/${number}`, {
-                params: { limit }
+                params: { limit },
             });
             return response.data;
         }
@@ -62,7 +62,7 @@ class WhatsAppApiClient {
         try {
             const response = await axios_1.default.post(`${this.baseUrl}/send`, {
                 number,
-                message
+                message,
             });
             return response.data;
         }

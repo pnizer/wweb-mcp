@@ -23,7 +23,7 @@ export function routerFactory(client: Client): Router {
     } catch (error) {
       res.status(500).json({
         error: 'Failed to get client status',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       });
     }
   });
@@ -49,7 +49,7 @@ export function routerFactory(client: Client): Router {
       } else {
         res.status(500).json({
           error: 'Failed to fetch contacts',
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         });
       }
     }
@@ -76,12 +76,12 @@ export function routerFactory(client: Client): Router {
   router.get('/contacts/search', async (req: Request, res: Response) => {
     try {
       const query = req.query.query as string;
-      
+
       if (!query) {
         res.status(400).json({ error: 'Search query is required' });
         return;
       }
-      
+
       const contacts = await whatsappService.searchContacts(query);
       res.json(contacts);
     } catch (error) {
@@ -90,7 +90,7 @@ export function routerFactory(client: Client): Router {
       } else {
         res.status(500).json({
           error: 'Failed to search contacts',
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         });
       }
     }
@@ -117,7 +117,7 @@ export function routerFactory(client: Client): Router {
       } else {
         res.status(500).json({
           error: 'Failed to fetch chats',
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         });
       }
     }
@@ -152,7 +152,7 @@ export function routerFactory(client: Client): Router {
     try {
       const number = req.params.number;
       const limit = parseInt(req.query.limit as string) || 10;
-      
+
       const messages = await whatsappService.getMessages(number, limit);
       res.json(messages);
     } catch (error) {
@@ -164,13 +164,13 @@ export function routerFactory(client: Client): Router {
         } else {
           res.status(500).json({
             error: 'Failed to fetch messages',
-            details: error.message
+            details: error.message,
           });
         }
       } else {
         res.status(500).json({
           error: 'Failed to fetch messages',
-          details: String(error)
+          details: String(error),
         });
       }
     }
@@ -208,12 +208,12 @@ export function routerFactory(client: Client): Router {
   router.post('/send', async (req: Request, res: Response) => {
     try {
       const { number, message } = req.body;
-      
+
       if (!number || !message) {
         res.status(400).json({ error: 'Number and message are required' });
         return;
       }
-      
+
       const result = await whatsappService.sendMessage(number, message);
       res.json(result);
     } catch (error) {
@@ -225,13 +225,13 @@ export function routerFactory(client: Client): Router {
         } else {
           res.status(500).json({
             error: 'Failed to send message',
-            details: error.message
+            details: error.message,
           });
         }
       } else {
         res.status(500).json({
           error: 'Failed to send message',
-          details: String(error)
+          details: String(error),
         });
       }
     }

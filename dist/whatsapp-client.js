@@ -14,18 +14,18 @@ function createWhatsAppClient(config = {}) {
     try {
         fs_1.default.rmSync(authDataPath + '/SingletonLock', { force: true });
     }
-    catch (error) {
+    catch {
         // Ignore if file doesn't exist
     }
     const npx_args = { headless: true };
     const docker_args = {
         headless: true,
         userDataDir: authDataPath,
-        args: ["--no-sandbox", "--single-process", "--no-zygote"]
+        args: ['--no-sandbox', '--single-process', '--no-zygote'],
     };
     const authStrategy = config.authStrategy === 'local' && !config.dockerContainer
         ? new whatsapp_web_js_1.LocalAuth({
-            dataPath: authDataPath
+            dataPath: authDataPath,
         })
         : new whatsapp_web_js_1.NoAuth();
     console.error('authStrategy', authStrategy);
@@ -34,7 +34,7 @@ function createWhatsAppClient(config = {}) {
     const client = new whatsapp_web_js_1.Client({
         puppeteer,
         authStrategy,
-        restartOnAuthFail: true
+        restartOnAuthFail: true,
     });
     // Generate QR code when needed
     client.on('qr', (qr) => {
@@ -43,7 +43,7 @@ function createWhatsAppClient(config = {}) {
             qrcode_1.default.toFile(config.qrCodeFile, qr, {
                 errorCorrectionLevel: 'H',
                 type: 'png',
-            }, (err) => {
+            }, err => {
                 if (err) {
                     console.error('Failed to save QR code to file:', err);
                 }
@@ -53,7 +53,7 @@ function createWhatsAppClient(config = {}) {
             });
         }
         else {
-            qrcode_terminal_1.default.generate(qr, { small: true }, (qrcode) => {
+            qrcode_terminal_1.default.generate(qr, { small: true }, qrcode => {
                 console.error(qrcode);
             });
             console.error('QR code generated. Scan it with your phone to log in.');

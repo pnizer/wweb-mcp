@@ -11,58 +11,64 @@ export interface WhatsAppConfig {
   dockerContainer?: boolean;
 }
 
-export function createWhatsAppClient(config: WhatsAppConfig = {}) {
-    const authDataPath = config.authDataPath || '.wwebjs_auth';
-    
-    // remove Chrome lock file if it exists
-    try {
-        fs.rmSync(authDataPath + '/SingletonLock', { force: true });
-    } catch (error) {
-        // Ignore if file doesn't exist
-    }
+export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
+  const authDataPath = config.authDataPath || '.wwebjs_auth';
 
-    const npx_args = { headless: true }
-    const docker_args = { 
-        headless: true,
-        userDataDir: authDataPath,
-        args: ["--no-sandbox", "--single-process", "--no-zygote"] 
-    }
+  // remove Chrome lock file if it exists
+  try {
+    fs.rmSync(authDataPath + '/SingletonLock', { force: true });
+  } catch {
+    // Ignore if file doesn't exist
+  }
 
-    const authStrategy = config.authStrategy === 'local' && !config.dockerContainer
-    ? new LocalAuth({
-        dataPath: authDataPath
-      })
-    : new NoAuth();
-    
-    console.error('authStrategy', authStrategy);
-    const puppeteer = config.dockerContainer ? docker_args : npx_args;
-    console.error('puppeteer', puppeteer);
+  const npx_args = { headless: true };
+  const docker_args = {
+    headless: true,
+    userDataDir: authDataPath,
+    args: ['--no-sandbox', '--single-process', '--no-zygote'],
+  };
+
+  const authStrategy =
+    config.authStrategy === 'local' && !config.dockerContainer
+      ? new LocalAuth({
+          dataPath: authDataPath,
+        })
+      : new NoAuth();
+
+  console.error('authStrategy', authStrategy);
+  const puppeteer = config.dockerContainer ? docker_args : npx_args;
+  console.error('puppeteer', puppeteer);
 
   const client = new Client({
     puppeteer,
     authStrategy,
-    restartOnAuthFail: true
+    restartOnAuthFail: true,
   });
 
   // Generate QR code when needed
   client.on('qr', (qr: string) => {
     // If filename is provided, save QR code to file
     if (config.qrCodeFile) {
-      QRCode.toFile(config.qrCodeFile, qr, {
-        errorCorrectionLevel: 'H',
-        type: 'png',
-      }, (err) => {
-        if (err) {
-          console.error('Failed to save QR code to file:', err);
-        } else {
-          console.error(`QR code saved to file: ${config.qrCodeFile}`);
-        }
-      });
+      QRCode.toFile(
+        config.qrCodeFile,
+        qr,
+        {
+          errorCorrectionLevel: 'H',
+          type: 'png',
+        },
+        err => {
+          if (err) {
+            console.error('Failed to save QR code to file:', err);
+          } else {
+            console.error(`QR code saved to file: ${config.qrCodeFile}`);
+          }
+        },
+      );
     } else {
-        qrcode.generate(qr, { small: true }, (qrcode) => {
-            console.error(qrcode);
-        });
-        console.error('QR code generated. Scan it with your phone to log in.');    
+      qrcode.generate(qr, { small: true }, qrcode => {
+        console.error(qrcode);
+      });
+      console.error('QR code generated. Scan it with your phone to log in.');
     }
   });
 
@@ -93,4 +99,4 @@ export function createWhatsAppClient(config: WhatsAppConfig = {}) {
   });
 
   return client;
-} 
+}
