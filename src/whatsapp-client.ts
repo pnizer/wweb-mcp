@@ -1,11 +1,10 @@
 import { Client, LocalAuth, Message, NoAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
-import QRCode from 'qrcode';
+import logger from './logger';
 import fs from 'fs';
 
 // Configuration interface
 export interface WhatsAppConfig {
-  qrCodeFile?: string;
   authDataPath?: string;
   authStrategy?: 'local' | 'none';
   dockerContainer?: boolean;
@@ -35,9 +34,7 @@ export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
         })
       : new NoAuth();
 
-  console.error('authStrategy', authStrategy);
   const puppeteer = config.dockerContainer ? docker_args : npx_args;
-  console.error('puppeteer', puppeteer);
 
   const client = new Client({
     puppeteer,
@@ -47,55 +44,37 @@ export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
 
   // Generate QR code when needed
   client.on('qr', (qr: string) => {
-    // If filename is provided, save QR code to file
-    if (config.qrCodeFile) {
-      QRCode.toFile(
-        config.qrCodeFile,
-        qr,
-        {
-          errorCorrectionLevel: 'H',
-          type: 'png',
-        },
-        err => {
-          if (err) {
-            console.error('Failed to save QR code to file:', err);
-          } else {
-            console.error(`QR code saved to file: ${config.qrCodeFile}`);
-          }
-        },
-      );
-    } else {
-      qrcode.generate(qr, { small: true }, qrcode => {
-        console.error(qrcode);
-      });
-      console.error('QR code generated. Scan it with your phone to log in.');
-    }
+    // Display QR code in terminal
+    qrcode.generate(qr, { small: true }, qrcode => {
+      logger.info(qrcode);
+    });
+    logger.info('QR code generated. Scan it with your phone to log in.');
   });
 
   // Handle ready event
   client.on('ready', async () => {
-    console.error('Client is ready!');
+    logger.info('Client is ready!');
   });
 
   // Handle authenticated event
   client.on('authenticated', () => {
-    console.error('Authentication successful!');
+    logger.info('Authentication successful!');
   });
 
   // Handle auth failure event
   client.on('auth_failure', (msg: string) => {
-    console.error('Authentication failed:', msg);
+    logger.error('Authentication failed:', msg);
   });
 
   // Handle disconnected event
   client.on('disconnected', (reason: string) => {
-    console.error('Client was disconnected:', reason);
+    logger.warn('Client was disconnected:', reason);
   });
 
   // Handle incoming messages
   client.on('message', async (message: Message) => {
     const contact = await message.getContact();
-    console.error(`${contact.pushname} (${contact.number}): ${message.body}`);
+    logger.debug(`${contact.pushname} (${contact.number}): ${message.body}`);
   });
 
   return client;

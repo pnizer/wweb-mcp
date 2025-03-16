@@ -12,7 +12,13 @@ describe('WhatsApp Service', () => {
         wid: { server: 'c.us', user: '1234567890' },
         pushname: 'Test User',
         me: { id: { server: 'c.us', user: '1234567890' } },
-        phone: { device_manufacturer: 'Test', device_model: 'Test', os_build_number: 'Test', os_version: 'Test', wa_version: 'Test' },
+        phone: {
+          device_manufacturer: 'Test',
+          device_model: 'Test',
+          os_build_number: 'Test',
+          os_version: 'Test',
+          wa_version: 'Test',
+        },
         platform: 'test',
         getBatteryStatus: jest.fn().mockResolvedValue({ battery: 100, plugged: true }),
       },
@@ -57,7 +63,9 @@ describe('WhatsApp Service', () => {
     it('should throw error when client throws error', async () => {
       // Mock implementation to throw error
       Object.defineProperty(mockClient, 'info', {
-        get: () => { throw new Error('Test error'); }
+        get: () => {
+          throw new Error('Test error');
+        },
       });
 
       await expect(service.getStatus()).rejects.toThrow('Failed to get client status');
@@ -122,4 +130,4 @@ describe('WhatsApp Service', () => {
       await expect(service.getContacts()).rejects.toThrow('Failed to fetch contacts');
     });
   });
-}); 
+});

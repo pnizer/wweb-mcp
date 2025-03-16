@@ -1,9 +1,9 @@
-import tseslint from 'typescript-eslint';
-import jestPlugin from 'eslint-plugin-jest';
-import prettierPlugin from 'eslint-plugin-prettier';
-import prettierConfig from 'eslint-config-prettier';
+const tseslint = require('typescript-eslint');
+const jestPlugin = require('eslint-plugin-jest');
+const prettierPlugin = require('eslint-plugin-prettier');
+const prettierConfig = require('eslint-config-prettier');
 
-export default tseslint.config(
+module.exports = tseslint.config(
   {
     ignores: [
       'node_modules/**',

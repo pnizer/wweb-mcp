@@ -19,15 +19,6 @@ jest.mock('qrcode-terminal', () => ({
   generate: jest.fn(),
 }));
 
-jest.mock('qrcode', () => ({
-  toFile: jest.fn().mockImplementation((_file, _qr, _options, callback) => {
-    if (callback) {
-      callback(null);
-    }
-    return Promise.resolve();
-  }),
-}));
-
 jest.mock('fs', () => ({
   rmSync: jest.fn(),
   writeFileSync: jest.fn(),
@@ -83,24 +74,20 @@ describe('WhatsApp Client', () => {
     expect(client.on).toHaveBeenCalledWith('qr', expect.any(Function));
   });
 
-  it('should save QR code to file when qrCodeFile is specified', () => {
-    const config: WhatsAppConfig = {
-      qrCodeFile: 'qr.png',
-    };
-    const client = createWhatsAppClient(config);
-    
+  it('should display QR code in terminal', () => {
+    const client = createWhatsAppClient();
+
     // Get the QR handler function
     const qrHandler = (client.on as jest.Mock).mock.calls.find(call => call[0] === 'qr')[1];
-    
+
     // Call the handler with a mock QR code
     qrHandler('mock-qr-code');
-    
-    // Verify QRCode.toFile was called with any object as the third parameter
-    expect(require('qrcode').toFile).toHaveBeenCalledWith(
-      'qr.png', 
-      'mock-qr-code', 
+
+    // Verify qrcode-terminal.generate was called
+    expect(require('qrcode-terminal').generate).toHaveBeenCalledWith(
+      'mock-qr-code',
       expect.any(Object),
-      expect.any(Function)
+      expect.any(Function),
     );
   });
-}); 
+});

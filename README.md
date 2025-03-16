@@ -51,7 +51,6 @@ Disclaimer from WhatsApp Web project:
 | `--transport` | `-t` | MCP transport mode | `sse`, `command` | `sse` |
 | `--sse-port` | `-p` | Port for SSE server | - | `3002` |
 | `--api-port` | - | Port for WhatsApp API server | - | `3001` |
-| `--qr-code-file` | `-q` | File to save QR code to | - | - |
 | `--auth-data-path` | `-a` | Path to store authentication data | - | `.wwebjs_auth` |
 | `--auth-strategy` | `-s` | Authentication strategy | `local`, `none` | `local` |
 | `--api-base-url` | `-b` | API base URL for MCP when using api mode | - | `http://localhost:3001/api` |
@@ -293,3 +292,54 @@ This project uses [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Logging
+
+WhatsApp Web MCP includes a robust logging system built with Winston. The logging system provides:
+
+- Multiple log levels (error, warn, info, http, debug)
+- Console output with colorized logs
+- File-based logging with separate error and combined log files
+- HTTP request/response logging for API endpoints
+- Structured error handling
+- Environment-aware log levels (development vs. production)
+- All logs directed to stderr when running in MCP command mode
+
+### Log Levels
+
+The application supports the following log levels, in order of verbosity:
+
+1. **error** - Critical errors that prevent the application from functioning
+2. **warn** - Warnings that don't stop the application but require attention
+3. **info** - General information about application state and events
+4. **http** - HTTP request/response logging
+5. **debug** - Detailed debugging information
+
+### Configuring Log Level
+
+You can configure the log level when starting the application using the `--log-level` or `-l` flag:
+
+```bash
+npm start -- --log-level=debug
+```
+
+Or when using the global installation:
+
+```bash
+wweb-mcp --log-level=debug
+```
+
+### Log Files
+
+Logs are stored in the `logs` directory:
+
+- `error.log` - Contains only error-level logs
+- `combined.log` - Contains all logs at the configured level and below
+
+### Command Mode Logging
+
+When running in MCP command mode (`--mode mcp --transport command`), all logs are directed to stderr. This is important for command-line tools where stdout might be used for data output while stderr is used for logging and diagnostics. This ensures that the MCP protocol communication over stdout is not interfered with by log messages.
+
+### Test Environment
+
+In test environments (when `NODE_ENV=test` or when running with Jest), the logger automatically disables file logging and only outputs to the console. This prevents test runs from creating log files and avoids issues with file system permissions in CI/CD environments.

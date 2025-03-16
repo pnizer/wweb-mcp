@@ -24,20 +24,20 @@ jest.mock('@modelcontextprotocol/sdk/server/mcp.js', () => {
 // Mock the mcp-server module to avoid the ResourceTemplate issue
 jest.mock('../../src/mcp-server', () => {
   const originalModule = jest.requireActual('../../src/mcp-server');
-  
+
   return {
     ...originalModule,
-    createMcpServer: jest.fn().mockImplementation((config) => {
+    createMcpServer: jest.fn().mockImplementation(config => {
       const mockServer = {
         resource: jest.fn(),
         tool: jest.fn(),
       };
-      
+
       if (!config?.useApiClient) {
         const client = createWhatsAppClient(config?.whatsappConfig);
         client.initialize();
       }
-      
+
       return mockServer;
     }),
   };
@@ -62,13 +62,15 @@ describe('MCP Server', () => {
     (WhatsAppService as jest.Mock).mockImplementation(() => mockWhatsAppService);
 
     // Setup mock WhatsApp API client
-    mockWhatsAppApiClient = new WhatsAppApiClient('http://localhost') as jest.Mocked<WhatsAppApiClient>;
+    mockWhatsAppApiClient = new WhatsAppApiClient(
+      'http://localhost',
+    ) as jest.Mocked<WhatsAppApiClient>;
     (WhatsAppApiClient as jest.Mock).mockImplementation(() => mockWhatsAppApiClient);
   });
 
   it('should create an MCP server with default configuration', () => {
     createMcpServer();
-    
+
     // Verify WhatsApp client was created and initialized
     expect(createWhatsAppClient).toHaveBeenCalled();
     expect(mockWhatsAppClient.initialize).toHaveBeenCalled();
@@ -79,9 +81,9 @@ describe('MCP Server', () => {
       useApiClient: true,
       apiBaseUrl: 'http://localhost:3001',
     };
-    
+
     createMcpServer(config);
-    
+
     // Verify WhatsApp client was not initialized
     expect(mockWhatsAppClient.initialize).not.toHaveBeenCalled();
   });
@@ -89,14 +91,13 @@ describe('MCP Server', () => {
   it('should pass WhatsApp configuration to client', () => {
     const config: McpConfig = {
       whatsappConfig: {
-        qrCodeFile: 'qr.png',
         authStrategy: 'local',
       },
     };
-    
+
     createMcpServer(config);
-    
+
     // Verify WhatsApp client was created with correct configuration
     expect(createWhatsAppClient).toHaveBeenCalledWith(config.whatsappConfig);
   });
-}); 
+});

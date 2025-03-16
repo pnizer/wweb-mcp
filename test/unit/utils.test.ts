@@ -12,11 +12,11 @@ describe('Utility Functions', () => {
     it('should handle current timestamp', () => {
       const now = Math.floor(Date.now() / 1000);
       const isoString = timestampToIso(now);
-      
+
       // Create a date from the ISO string and compare with now
       const date = new Date(isoString);
       const nowDate = new Date(now * 1000);
-      
+
       // Allow for a small difference due to processing time
       expect(Math.abs(date.getTime() - nowDate.getTime())).toBeLessThan(1000);
     });
@@ -35,4 +35,4 @@ describe('Utility Functions', () => {
       expect(new Date(isoString).getTime()).toBe(-1000000 * 1000);
     });
   });
-}); 
+});

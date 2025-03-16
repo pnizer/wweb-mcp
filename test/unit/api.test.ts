@@ -15,14 +15,14 @@ describe('API Router', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create a mock client
     mockClient = {} as Client;
-    
+
     // Setup the mock WhatsApp service
     mockWhatsAppService = new WhatsAppService(mockClient) as jest.Mocked<WhatsAppService>;
     (WhatsAppService as jest.Mock).mockImplementation(() => mockWhatsAppService);
-    
+
     // Create an Express app and use the router
     app = express();
     app.use('/api', routerFactory(mockClient));
@@ -31,9 +31,9 @@ describe('API Router', () => {
   describe('GET /api/status', () => {
     it('should return status when successful', async () => {
       // Setup mock response
-      const mockStatus = { 
-        status: 'connected', 
-        info: {} as ClientInfo 
+      const mockStatus = {
+        status: 'connected',
+        info: {} as ClientInfo,
       };
       mockWhatsAppService.getStatus.mockResolvedValue(mockStatus);
 
@@ -102,4 +102,4 @@ describe('API Router', () => {
       expect(mockWhatsAppService.getContacts).toHaveBeenCalled();
     });
   });
-}); 
+});

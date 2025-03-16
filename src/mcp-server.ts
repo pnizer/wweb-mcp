@@ -2,11 +2,11 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { z } from 'zod';
 import { WhatsAppService } from './whatsapp-service';
 import { WhatsAppApiClient } from './whatsapp-api-client';
-import { createWhatsAppClient, WhatsAppConfig } from './whatsapp-client';
+import { WhatsAppConfig } from './whatsapp-client';
+import { Client } from 'whatsapp-web.js';
 
 // Configuration interface
 export interface McpConfig {
-  qrCodeFile?: string;
   useApiClient?: boolean;
   apiBaseUrl?: string;
   whatsappConfig?: WhatsAppConfig;
@@ -19,7 +19,7 @@ export interface McpConfig {
  * @param mcpConfig Configuration for the MCP server
  * @returns The configured MCP server
  */
-export function createMcpServer(config: McpConfig = {}): McpServer {
+export function createMcpServer(config: McpConfig = {}, client: Client | null = null): McpServer {
   const server = new McpServer({
     name: 'WhatsApp-Web-MCP',
     version: '1.0.0',
@@ -31,8 +31,9 @@ export function createMcpServer(config: McpConfig = {}): McpServer {
   if (config.useApiClient) {
     service = new WhatsAppApiClient(config.apiBaseUrl);
   } else {
-    const client = createWhatsAppClient(config.whatsappConfig);
-    client.initialize();
+    if (!client) {
+      throw new Error('WhatsApp client is required when useApiClient is false');
+    }
     service = new WhatsAppService(client);
   }
 

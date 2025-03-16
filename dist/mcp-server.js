@@ -5,7 +5,6 @@ const mcp_js_1 = require("@modelcontextprotocol/sdk/server/mcp.js");
 const zod_1 = require("zod");
 const whatsapp_service_1 = require("./whatsapp-service");
 const whatsapp_api_client_1 = require("./whatsapp-api-client");
-const whatsapp_client_1 = require("./whatsapp-client");
 /**
  * Creates an MCP server that exposes WhatsApp functionality through the Model Context Protocol
  * This allows AI models like Claude to interact with WhatsApp through a standardized interface
@@ -13,7 +12,7 @@ const whatsapp_client_1 = require("./whatsapp-client");
  * @param mcpConfig Configuration for the MCP server
  * @returns The configured MCP server
  */
-function createMcpServer(config = {}) {
+function createMcpServer(config = {}, client = null) {
     const server = new mcp_js_1.McpServer({
         name: 'WhatsApp-Web-MCP',
         version: '1.0.0',
@@ -24,8 +23,9 @@ function createMcpServer(config = {}) {
         service = new whatsapp_api_client_1.WhatsAppApiClient(config.apiBaseUrl);
     }
     else {
-        const client = (0, whatsapp_client_1.createWhatsAppClient)(config.whatsappConfig);
-        client.initialize();
+        if (!client) {
+            throw new Error('WhatsApp client is required when useApiClient is false');
+        }
         service = new whatsapp_service_1.WhatsAppService(client);
     }
     // Resource to list contacts

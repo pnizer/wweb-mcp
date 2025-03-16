@@ -6,7 +6,7 @@
     "wweb-mcp": "bin.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run validate && tsc",
     "start": "node dist/main.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/main.ts",
     "watch": "tsc -w",
@@ -28,16 +28,15 @@
     "@modelcontextprotocol/sdk": "^1.7.0",
     "axios": "^1.8.3",
     "express": "^5.0.1",
-    "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.26.0",
+    "winston": "^3.17.0",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.13.1",
-    "@types/qrcode": "^1.5.5",
     "@types/qrcode-terminal": "^0.12.2",
     "@types/supertest": "^6.0.2",
     "@types/yargs": "^17.0.33",
@@ -55,6 +54,5 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.1"
-  },
-  "type": "module"
+  }
 }
