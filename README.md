@@ -332,7 +332,6 @@ WhatsApp Web MCP includes a robust logging system built with Winston. The loggin
 
 - Multiple log levels (error, warn, info, http, debug)
 - Console output with colorized logs
-- File-based logging with separate error and combined log files
 - HTTP request/response logging for API endpoints
 - Structured error handling
 - Environment-aware log levels (development vs. production)
@@ -362,17 +361,10 @@ Or when using the global installation:
 wweb-mcp --log-level=debug
 ```
 
-### Log Files
-
-Logs are stored in the `logs` directory:
-
-- `error.log` - Contains only error-level logs
-- `combined.log` - Contains all logs at the configured level and below
-
 ### Command Mode Logging
 
 When running in MCP command mode (`--mode mcp --transport command`), all logs are directed to stderr. This is important for command-line tools where stdout might be used for data output while stderr is used for logging and diagnostics. This ensures that the MCP protocol communication over stdout is not interfered with by log messages.
 
 ### Test Environment
 
-In test environments (when `NODE_ENV=test` or when running with Jest), the logger automatically disables file logging and only outputs to the console. This prevents test runs from creating log files and avoids issues with file system permissions in CI/CD environments.
+In test environments (when `NODE_ENV=test` or when running with Jest), the logger automatically adjusts its behavior to be suitable for testing environments.

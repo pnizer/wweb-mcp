@@ -1,24 +1,5 @@
 import winston from 'winston';
-import path from 'path';
-import fs from 'fs';
 import util from 'util';
-
-// Check if running in test environment
-const isTestEnvironment =
-  process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
-
-// Ensure logs directory exists (skip in test environment)
-const logsDir = path.join(process.cwd(), 'logs');
-if (!isTestEnvironment) {
-  try {
-    if (!fs.existsSync(logsDir)) {
-      fs.mkdirSync(logsDir, { recursive: true });
-    }
-  } catch (error) {
-    // In test environment, fs might be mocked
-    console.error('Could not create logs directory:', error);
-  }
-}
 
 // Define log levels
 const levels = {
@@ -54,38 +35,14 @@ const consoleFormat = winston.format.combine(
   winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`),
 );
 
-// Define the format for file output (without colors)
-const fileFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`),
-);
-
-// Create transports based on environment
-let transports: winston.transport[] = [
+// Create transports
+const transports: winston.transport[] = [
   // Console transport
   new winston.transports.Console({
     format: consoleFormat,
     stderrLevels: ['error', 'warn'],
   }),
 ];
-
-// Add file transports only in non-test environments
-if (!isTestEnvironment) {
-  transports = [
-    ...transports,
-    // Error log file transport
-    new winston.transports.File({
-      filename: path.join(logsDir, 'error.log'),
-      level: 'error',
-      format: fileFormat,
-    }),
-    // Combined log file transport
-    new winston.transports.File({
-      filename: path.join(logsDir, 'combined.log'),
-      format: fileFormat,
-    }),
-  ];
-}
 
 // Create the logger
 const logger = winston.createLogger({
