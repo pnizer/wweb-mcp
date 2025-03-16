@@ -51,10 +51,26 @@ Disclaimer from WhatsApp Web project:
 | `--transport` | `-t` | MCP transport mode | `sse`, `command` | `sse` |
 | `--sse-port` | `-p` | Port for SSE server | - | `3002` |
 | `--api-port` | - | Port for WhatsApp API server | - | `3001` |
-| `--qr-code-file` | `-q` | File to save QR code to | - | - |
 | `--auth-data-path` | `-a` | Path to store authentication data | - | `.wwebjs_auth` |
 | `--auth-strategy` | `-s` | Authentication strategy | `local`, `none` | `local` |
 | `--api-base-url` | `-b` | API base URL for MCP when using api mode | - | `http://localhost:3001/api` |
+| `--api-key` | `-k` | API key for WhatsApp Web REST API when using api mode | - | `''` |
+
+### API Key Authentication
+
+When running in API mode, the WhatsApp API server requires authentication using an API key. The API key is automatically generated when you start the WhatsApp API server and is displayed in the logs:
+
+```
+WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+```
+
+To connect the MCP server to the WhatsApp API server, you need to provide this API key using the `--api-key` or `-k` option:
+
+```bash
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+```
+
+The API key is stored in the authentication data directory (specified by `--auth-data-path`) and persists between restarts of the WhatsApp API server.
 
 ### Authentication Methods
 
@@ -87,7 +103,11 @@ npx wweb-mcp --mode mcp --mcp-mode standalone --transport sse --sse-port 3002
 #### MCP Server (API Client)
 Run an MCP server that connects to the WhatsApp API server:
 ```bash
-npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --transport sse --sse-port 3002
+# First, start the WhatsApp API server and note the API key from the logs
+npx wweb-mcp --mode whatsapp-api --api-port 3001
+
+# Then, start the MCP server with the API key
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key YOUR_API_KEY --transport sse --sse-port 3002
 ```
 
 ### Available Tools
@@ -121,7 +141,12 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 2. Scan the QR code with your WhatsApp mobile app
 
-3. Add the following to your Claude Desktop configuration:
+3. Note the API key displayed in the logs:
+   ```
+   WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+   ```
+
+4. Add the following to your Claude Desktop configuration:
    ```json
    {
        "mcpServers": {
@@ -133,7 +158,8 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
                    "-s", "local",
                    "-c", "api",
                    "-t", "command",
-                   "--api-base-url", "http://localhost:3001/api"
+                   "--api-base-url", "http://localhost:3001/api",
+                   "--api-key", "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
                ]
            }
        }
@@ -149,7 +175,12 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 2. Scan the QR code with your WhatsApp mobile app
 
-3. Add the following to your Claude Desktop configuration:
+3. Note the API key displayed in the logs:
+   ```
+   WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+   ```
+
+4. Add the following to your Claude Desktop configuration:
    ```json
    {
        "mcpServers": {
@@ -164,15 +195,16 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
                    "-s", "local",
                    "-c", "api",
                    "-t", "command",
-                   "--api-base-url", "http://host.docker.internal:3001/api"
+                   "--api-base-url", "http://host.docker.internal:3001/api",
+                   "--api-key", "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
                ]
            }
        }
    }
    ```
 
-4. Restart Claude Desktop
-5. The WhatsApp functionality will be available through Claude's interface
+5. Restart Claude Desktop
+6. The WhatsApp functionality will be available through Claude's interface
 
 ### Prompt Templates
 
@@ -221,6 +253,41 @@ src/
 npm run build
 ```
 
+### Testing
+
+The project uses Jest for unit testing. To run the tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Generate test coverage report
+npm run test:coverage
+```
+
+### Linting and Formatting
+
+The project uses ESLint and Prettier for code quality and formatting:
+
+```bash
+# Run linter
+npm run lint
+
+# Fix linting issues automatically
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+
+# Validate code (lint + test)
+npm run validate
+```
+
+The linting configuration enforces TypeScript best practices and maintains consistent code style across the project.
+
 ## Troubleshooting
 
 ### Claude Desktop Integration Issues
@@ -258,3 +325,54 @@ This project uses [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Logging
+
+WhatsApp Web MCP includes a robust logging system built with Winston. The logging system provides:
+
+- Multiple log levels (error, warn, info, http, debug)
+- Console output with colorized logs
+- File-based logging with separate error and combined log files
+- HTTP request/response logging for API endpoints
+- Structured error handling
+- Environment-aware log levels (development vs. production)
+- All logs directed to stderr when running in MCP command mode
+
+### Log Levels
+
+The application supports the following log levels, in order of verbosity:
+
+1. **error** - Critical errors that prevent the application from functioning
+2. **warn** - Warnings that don't stop the application but require attention
+3. **info** - General information about application state and events
+4. **http** - HTTP request/response logging
+5. **debug** - Detailed debugging information
+
+### Configuring Log Level
+
+You can configure the log level when starting the application using the `--log-level` or `-l` flag:
+
+```bash
+npm start -- --log-level=debug
+```
+
+Or when using the global installation:
+
+```bash
+wweb-mcp --log-level=debug
+```
+
+### Log Files
+
+Logs are stored in the `logs` directory:
+
+- `error.log` - Contains only error-level logs
+- `combined.log` - Contains all logs at the configured level and below
+
+### Command Mode Logging
+
+When running in MCP command mode (`--mode mcp --transport command`), all logs are directed to stderr. This is important for command-line tools where stdout might be used for data output while stderr is used for logging and diagnostics. This ensures that the MCP protocol communication over stdout is not interfered with by log messages.
+
+### Test Environment
+
+In test environments (when `NODE_ENV=test` or when running with Jest), the logger automatically disables file logging and only outputs to the console. This prevents test runs from creating log files and avoids issues with file system permissions in CI/CD environments.

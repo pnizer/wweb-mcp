@@ -27,7 +27,7 @@ function routerFactory(client) {
         catch (error) {
             res.status(500).json({
                 error: 'Failed to get client status',
-                details: error instanceof Error ? error.message : String(error)
+                details: error instanceof Error ? error.message : String(error),
             });
         }
     });
@@ -54,7 +54,7 @@ function routerFactory(client) {
             else {
                 res.status(500).json({
                     error: 'Failed to fetch contacts',
-                    details: error instanceof Error ? error.message : String(error)
+                    details: error instanceof Error ? error.message : String(error),
                 });
             }
         }
@@ -94,7 +94,7 @@ function routerFactory(client) {
             else {
                 res.status(500).json({
                     error: 'Failed to search contacts',
-                    details: error instanceof Error ? error.message : String(error)
+                    details: error instanceof Error ? error.message : String(error),
                 });
             }
         }
@@ -122,7 +122,7 @@ function routerFactory(client) {
             else {
                 res.status(500).json({
                     error: 'Failed to fetch chats',
-                    details: error instanceof Error ? error.message : String(error)
+                    details: error instanceof Error ? error.message : String(error),
                 });
             }
         }
@@ -170,14 +170,14 @@ function routerFactory(client) {
                 else {
                     res.status(500).json({
                         error: 'Failed to fetch messages',
-                        details: error.message
+                        details: error.message,
                     });
                 }
             }
             else {
                 res.status(500).json({
                     error: 'Failed to fetch messages',
-                    details: String(error)
+                    details: String(error),
                 });
             }
         }
@@ -232,14 +232,14 @@ function routerFactory(client) {
                 else {
                     res.status(500).json({
                         error: 'Failed to send message',
-                        details: error.message
+                        details: error.message,
                     });
                 }
             }
             else {
                 res.status(500).json({
                     error: 'Failed to send message',
-                    details: String(error)
+                    details: String(error),
                 });
             }
         }
