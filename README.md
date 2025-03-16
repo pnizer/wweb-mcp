@@ -52,10 +52,6 @@ WhatsApp Web MCP provides a seamless integration between WhatsApp Web and AI mod
 ### Authentication Methods
 
 #### Local Authentication (Recommended)
-```bash
-export AUTH_STRATEGY=local
-export AUTH_DATA_PATH=/path/to/auth/storage
-```
 - Scan QR code once
 - Credentials persist between sessions
 - More stable for long-term operation
@@ -109,35 +105,68 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 #### Claude Desktop Integration
 
-1. Execute Docker to scan the QR code and save the session in the volume:
+##### Option 1: Using NPX
 
-```shell
-docker run -i -e MCP_MODE=command -e AUTH_STRATEGY=local -e AUTH_DATA_PATH=/wwebjs_auth -v wweb-mcp:/wwebjs_auth --rm wweb-mcp:latest
-```
+1. Start WhatsApp API server:
+   ```bash
+   npx wweb-mcp -m whatsapp-api -s local
+   ```
 
-2. Add the following to your Claude Desktop configuration:
-```json
-{
-    "mcpServers": {
-        "whatsapp": {
-            "command": "docker",
-            "args": [
-                "run",
-                "-i",
-                "-e", "MCP_MODE=command",
-                "-e", "AUTH_STRATEGY=local",
-                "-e", "AUTH_DATA_PATH=/wwebjs_auth",
-                "-v", "wweb-mcp:/wwebjs_auth",
-                "--rm",
-                "wweb-mcp:latest"
-            ]
-        }
-    }
-}
-```
+2. Scan the QR code with your WhatsApp mobile app
 
-3. Restart Claude Desktop
-4. The WhatsApp functionality will be available through Claude's interface
+3. Add the following to your Claude Desktop configuration:
+   ```json
+   {
+       "mcpServers": {
+           "whatsapp": {
+               "command": "npx",
+               "args": [
+                   "wweb-mcp",
+                   "-m", "mcp",
+                   "-s", "local",
+                   "-c", "api",
+                   "-t", "command",
+                   "--api-base-url", "http://localhost:3001/api"
+               ]
+           }
+       }
+   }
+   ```
+
+##### Option 2: Using Docker
+
+1. Start WhatsApp API server in Docker:
+   ```bash
+   docker run -i -p 3001:3001 -v wweb-mcp:/wwebjs_auth --rm wweb-mcp:latest -m whatsapp-api -s local -a /wwebjs_auth
+   ```
+
+2. Scan the QR code with your WhatsApp mobile app
+
+3. Add the following to your Claude Desktop configuration:
+   ```json
+   {
+       "mcpServers": {
+           "whatsapp": {
+               "command": "docker",
+               "args": [
+                   "run",
+                   "-i",
+                   "--rm",
+                   "wweb-mcp:latest",
+                   "-m", "mcp",
+                   "-s", "local",
+                   "-c", "api",
+                   "-t", "command",
+                   "-a", "/wwebjs_auth",
+                   "--api-base-url", "http://host.docker.internal:3001/api"
+               ]
+           }
+       }
+   }
+   ```
+
+4. Restart Claude Desktop
+5. The WhatsApp functionality will be available through Claude's interface
 
 ### Prompt Templates
 
@@ -188,22 +217,17 @@ npm run build
 
 ## Troubleshooting
 
-### Common Issues
+### Claude Desktop Integration Issues
+   - It's not possible to start wweb-mcp in command standalone mode on Claude because Claude opens more than one process, multiple times, and each wweb-mcp needs to open a puppeteer session that cannot share the same WhatsApp authentication. Because of this limitation, we've split the app into MCP and API modes to allow for proper integration with Claude.
 
-1. QR Code Not Scanning
-   - Ensure your phone has a stable internet connection
-   - Try clearing WhatsApp Web data on your phone
-   - Restart the server and try again
+## Upcoming Features
 
-2. Authentication Failures
-   - Check if AUTH_DATA_PATH is writable
-   - Clear the auth directory and re-authenticate
-   - Verify WhatsApp Web is not connected to other devices
-
-3. Connection Drops
-   - Ensure stable internet connectivity
-   - Check if phone is connected to the internet
-   - Verify WhatsApp is running on your phone
+- Create webhooks for incoming messages and other WhatsApp events
+- Support for sending media files (images, audio, documents)
+- Group chat management features
+- Contact management (add/remove contacts)
+- Message templates for common scenarios
+- Enhanced error handling and recovery
 
 ## Contributing
 
