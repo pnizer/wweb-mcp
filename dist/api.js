@@ -5,14 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.routerFactory = routerFactory;
 const express_1 = __importDefault(require("express"));
-function timestampToIso(timestamp) {
-    // Why it's return 1970-01-20T23:19:31.681Z?
-    // It's because the timestamp is in milliseconds and the date is in UTC
-    return new Date(timestamp * 1000).toISOString();
-}
-function routerFactory({ client }) {
+const whatsapp_service_1 = require("./whatsapp-service");
+function routerFactory(client) {
     // Create a router instance
     const router = express_1.default.Router();
+    const whatsappService = new whatsapp_service_1.WhatsAppService(client);
     /**
      * @swagger
      * /api/status:
@@ -24,11 +21,8 @@ function routerFactory({ client }) {
      */
     router.get('/status', async (_req, res) => {
         try {
-            const status = client.info ? 'connected' : 'disconnected';
-            res.json({
-                status,
-                info: client.info
-            });
+            const status = await whatsappService.getStatus();
+            res.json(status);
         }
         catch (error) {
             res.status(500).json({
@@ -50,25 +44,19 @@ function routerFactory({ client }) {
      */
     router.get('/contacts', async (_req, res) => {
         try {
-            if (!client.info) {
-                res.status(503).json({ error: 'WhatsApp client not ready. Please try again later.' });
-                return;
-            }
-            const contacts = await client.getContacts();
-            const filteredContacts = contacts.filter((contact) => contact.isUser &&
-                contact.id.server === 'c.us' &&
-                !contact.isMe);
-            const formattedContacts = filteredContacts.map((contact) => ({
-                name: contact.pushname || "Unknown",
-                number: contact.number,
-            }));
-            res.json(formattedContacts);
+            const contacts = await whatsappService.getContacts();
+            res.json(contacts);
         }
         catch (error) {
-            res.status(500).json({
-                error: 'Failed to fetch contacts',
-                details: error instanceof Error ? error.message : String(error)
-            });
+            if (error instanceof Error && error.message.includes('not ready')) {
+                res.status(503).json({ error: error.message });
+            }
+            else {
+                res.status(500).json({
+                    error: 'Failed to fetch contacts',
+                    details: error instanceof Error ? error.message : String(error)
+                });
+            }
         }
     });
     /**
@@ -96,27 +84,19 @@ function routerFactory({ client }) {
                 res.status(400).json({ error: 'Search query is required' });
                 return;
             }
-            if (!client.info) {
-                res.status(503).json({ error: 'WhatsApp client not ready. Please try again later.' });
-                return;
-            }
-            const contacts = await client.getContacts();
-            const filteredContacts = contacts.filter((contact) => contact.isUser &&
-                contact.id.server === 'c.us' &&
-                !contact.isMe &&
-                ((contact.pushname && contact.pushname.toLowerCase().includes(query.toLowerCase())) ||
-                    (contact.number && contact.number.includes(query))));
-            const formattedContacts = filteredContacts.map((contact) => ({
-                name: contact.pushname || "Unknown",
-                number: contact.number,
-            }));
-            res.json(formattedContacts);
+            const contacts = await whatsappService.searchContacts(query);
+            res.json(contacts);
         }
         catch (error) {
-            res.status(500).json({
-                error: 'Failed to search contacts',
-                details: error instanceof Error ? error.message : String(error)
-            });
+            if (error instanceof Error && error.message.includes('not ready')) {
+                res.status(503).json({ error: error.message });
+            }
+            else {
+                res.status(500).json({
+                    error: 'Failed to search contacts',
+                    details: error instanceof Error ? error.message : String(error)
+                });
+            }
         }
     });
     /**
@@ -132,26 +112,19 @@ function routerFactory({ client }) {
      */
     router.get('/chats', async (_req, res) => {
         try {
-            if (!client.info) {
-                res.status(503).json({ error: 'WhatsApp client not ready. Please try again later.' });
-                return;
-            }
-            const chats = await client.getChats();
-            const formattedChats = chats.map((chat) => ({
-                id: chat.id._serialized,
-                name: chat.name,
-                isGroup: chat.isGroup,
-                unreadCount: chat.unreadCount,
-                timestamp: timestampToIso(chat.timestamp),
-                pinned: chat.pinned
-            }));
-            res.json(formattedChats);
+            const chats = await whatsappService.getChats();
+            res.json(chats);
         }
         catch (error) {
-            res.status(500).json({
-                error: 'Failed to fetch chats',
-                details: error instanceof Error ? error.message : String(error)
-            });
+            if (error instanceof Error && error.message.includes('not ready')) {
+                res.status(503).json({ error: error.message });
+            }
+            else {
+                res.status(500).json({
+                    error: 'Failed to fetch chats',
+                    details: error instanceof Error ? error.message : String(error)
+                });
+            }
         }
     });
     /**
@@ -183,32 +156,30 @@ function routerFactory({ client }) {
         try {
             const number = req.params.number;
             const limit = parseInt(req.query.limit) || 10;
-            if (!client.info) {
-                res.status(503).json({ error: 'WhatsApp client not ready. Please try again later.' });
-                return;
-            }
-            const sanitized_number = number.toString().replace(/[- )(]/g, "");
-            const number_details = await client.getNumberId(sanitized_number);
-            if (!number_details) {
-                res.status(404).json({ error: 'Mobile number is not registered on WhatsApp' });
-                return;
-            }
-            const chat = await client.getChatById(number_details._serialized);
-            const messages = await chat.fetchMessages({ limit });
-            const formattedMessages = messages.map((message) => ({
-                id: message.id.id,
-                body: message.body,
-                fromMe: message.fromMe,
-                timestamp: timestampToIso(message.timestamp),
-                type: message.type
-            }));
-            res.json(formattedMessages);
+            const messages = await whatsappService.getMessages(number, limit);
+            res.json(messages);
         }
         catch (error) {
-            res.status(500).json({
-                error: 'Failed to fetch messages',
-                details: error instanceof Error ? error.message : String(error)
-            });
+            if (error instanceof Error) {
+                if (error.message.includes('not ready')) {
+                    res.status(503).json({ error: error.message });
+                }
+                else if (error.message.includes('not registered')) {
+                    res.status(404).json({ error: error.message });
+                }
+                else {
+                    res.status(500).json({
+                        error: 'Failed to fetch messages',
+                        details: error.message
+                    });
+                }
+            }
+            else {
+                res.status(500).json({
+                    error: 'Failed to fetch messages',
+                    details: String(error)
+                });
+            }
         }
     });
     /**
@@ -247,28 +218,30 @@ function routerFactory({ client }) {
                 res.status(400).json({ error: 'Number and message are required' });
                 return;
             }
-            if (!client.info) {
-                res.status(503).json({ error: 'WhatsApp client not ready. Please try again later.' });
-                return;
-            }
-            const sanitized_number = number.toString().replace(/[- )(]/g, "");
-            const number_details = await client.getNumberId(sanitized_number);
-            if (!number_details) {
-                res.status(404).json({ error: `Mobile number ${number} is not registered on WhatsApp` });
-                return;
-            }
-            const sendMessageData = await client.sendMessage(number_details._serialized, message);
-            res.json({
-                success: true,
-                messageId: sendMessageData.id.id,
-                to: number
-            });
+            const result = await whatsappService.sendMessage(number, message);
+            res.json(result);
         }
         catch (error) {
-            res.status(500).json({
-                error: 'Failed to send message',
-                details: error instanceof Error ? error.message : String(error)
-            });
+            if (error instanceof Error) {
+                if (error.message.includes('not ready')) {
+                    res.status(503).json({ error: error.message });
+                }
+                else if (error.message.includes('not registered')) {
+                    res.status(404).json({ error: error.message });
+                }
+                else {
+                    res.status(500).json({
+                        error: 'Failed to send message',
+                        details: error.message
+                    });
+                }
+            }
+            else {
+                res.status(500).json({
+                    error: 'Failed to send message',
+                    details: String(error)
+                });
+            }
         }
     });
     return router;

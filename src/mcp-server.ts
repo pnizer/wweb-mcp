@@ -1,29 +1,15 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { Client, Contact, Message } from 'whatsapp-web.js';
-import { createWhatsAppClient } from "./whatsapp-client";
+import { WhatsAppService } from "./whatsapp-service";
+import { WhatsAppApiClient } from "./whatsapp-api-client";
+import { createWhatsAppClient, WhatsAppConfig } from "./whatsapp-client";
 
 // Configuration interface
 export interface McpConfig {
   qrCodeFile?: string;
-  eagerlyInitializeClient?: boolean;
-}
-
-let clientPromise: Promise<Client>;
-let config: McpConfig = {};
-
-// Export the getClient function so it can be used in the API
-export async function getClient() {
-  if (!clientPromise) {  
-    clientPromise = new Promise<Client>((resolve, reject) => {
-      const client = createWhatsAppClient({qrCodeFile: config.qrCodeFile});
-      // Initialize WhatsApp client
-      console.error('Initializing WhatsApp client...');
-      client.initialize().then(() => resolve(client)).catch(reject);
-    });
-  }
-
-  return await clientPromise;
+  useApiClient?: boolean;
+  apiBaseUrl?: string;
+  whatsappConfig?: WhatsAppConfig;
 }
 
 /**
@@ -33,53 +19,36 @@ export async function getClient() {
  * @param mcpConfig Configuration for the MCP server
  * @returns The configured MCP server
  */
-export function createMcpServer(mcpConfig: McpConfig = {}) {
-  // Store the configuration
-  config = mcpConfig;
-  
-  // Initialize client eagerly if specified
-  if (config.eagerlyInitializeClient) {
-    getClient();
-  }
-  
+export function createMcpServer(config: McpConfig = {}) {
   const server = new McpServer({
     name: "WhatsApp-Web-MCP",
     version: "1.0.0",
     description: "WhatsApp Web API exposed through Model Context Protocol"
   });
 
-  // Check if client is ready
-  const ensureClientReady = async () => {
-    if (!(await getClient()).info) {
-      throw new Error("WhatsApp client not ready. Please try again later.");
-    }
-  };
+
+  let service: WhatsAppApiClient | WhatsAppService;
+  
+  if (config.useApiClient) { 
+    service = new WhatsAppApiClient(config.apiBaseUrl)
+  } else {
+    const client = createWhatsAppClient(config.whatsappConfig);
+    client.initialize();
+    service = new WhatsAppService(client);
+  }
 
   // Resource to list contacts
   server.resource(
     "contacts",
     "whatsapp://contacts",
     async (uri) => {
-      ensureClientReady();
-      
       try {
-        const contacts = await (await getClient()).getContacts();
-        
-        const filteredContacts = contacts.filter((contact: Contact) => 
-          contact.isUser && 
-          contact.id.server === 'c.us' && 
-          !contact.isMe
-        );
-
-        const formattedContacts = filteredContacts.map((contact: Contact) => ({
-          name: contact.pushname || "Unknown",
-          number: contact.number,
-        }));
+        const contacts = await service.getContacts();
 
         return {
           contents: [{
             uri: uri.href,
-            text: JSON.stringify(formattedContacts, null, 2)
+            text: JSON.stringify(contacts, null, 2)
           }]
         };
       } catch (error) {
@@ -93,31 +62,15 @@ export function createMcpServer(mcpConfig: McpConfig = {}) {
     "messages",
     new ResourceTemplate("whatsapp://messages/{number}", { list: undefined }),
     async (uri, { number }) => {
-      ensureClientReady();
-      
       try {
-        const sanitized_number = number.toString().replace(/[- )(]/g, "");
-        const number_details = await (await getClient()).getNumberId(sanitized_number);
-
-        if (!number_details) {
-          throw new Error('Mobile number is not registered on WhatsApp');
-        }
-
-        const chat = await (await getClient()).getChatById(number_details._serialized);
-        const messages = await chat.fetchMessages({ limit: 10 });
-
-        const formattedMessages = messages.map((message: Message) => ({
-          id: message.id.id,
-          body: message.body,
-          fromMe: message.fromMe,
-          timestamp: message.timestamp,
-          type: message.type
-        }));
+        // Ensure number is a string
+        const phoneNumber = Array.isArray(number) ? number[0] : number;
+        const messages = await service.getMessages(phoneNumber, 10);
 
         return {
           contents: [{
             uri: uri.href,
-            text: JSON.stringify(formattedMessages, null, 2)
+            text: JSON.stringify(messages, null, 2)
           }]
         };
       } catch (error) {
@@ -131,28 +84,126 @@ export function createMcpServer(mcpConfig: McpConfig = {}) {
     "chats",
     "whatsapp://chats",
     async (uri) => {
-      ensureClientReady();
-      
       try {
-        const chats = await (await getClient()).getChats();
-        
-        const formattedChats = chats.map(chat => ({
-          id: chat.id._serialized,
-          name: chat.name,
-          isGroup: chat.isGroup,
-          unreadCount: chat.unreadCount,
-          timestamp: chat.timestamp,
-          pinned: chat.pinned
-        }));
+        const chats = await service.getChats();
 
         return {
           contents: [{
             uri: uri.href,
-            text: JSON.stringify(formattedChats, null, 2)
+            text: JSON.stringify(chats, null, 2)
           }]
         };
       } catch (error) {
         throw new Error(`Failed to fetch chats: ${error}`);
+      }
+    }
+  );
+
+  // Tool to get WhatsApp connection status
+  server.tool(
+    "get_status",
+    {},
+    async () => {
+      try {
+        const status = await service.getStatus();
+        
+        return {
+          content: [{ 
+            type: "text", 
+            text: `WhatsApp connection status: ${status.status}` 
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Error getting status: ${error}` 
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Tool to search contacts
+  server.tool(
+    "search_contacts",
+    {
+      query: z.string().describe("Search query to find contacts by name or number")
+    },
+    async ({ query }) => {
+      try {
+        const contacts = await service.searchContacts(query);
+        
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Found ${contacts.length} contacts matching "${query}":\n${JSON.stringify(contacts, null, 2)}` 
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Error searching contacts: ${error}` 
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Tool to get messages from a specific chat
+  server.tool(
+    "get_messages",
+    {
+      number: z.string().describe("The phone number to get messages from"),
+      limit: z.number().optional().describe("The number of messages to get (default: 10)")
+    },
+    async ({ number, limit = 10 }) => {
+      try {
+        const messages = await service.getMessages(number, limit);
+        
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Retrieved ${messages.length} messages from ${number}:\n${JSON.stringify(messages, null, 2)}` 
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Error getting messages: ${error}` 
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Tool to get all chats
+  server.tool(
+    "get_chats",
+    {},
+    async () => {
+      try {
+        const chats = await service.getChats();
+        
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Retrieved ${chats.length} chats:\n${JSON.stringify(chats, null, 2)}` 
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Error getting chats: ${error}` 
+          }],
+          isError: true
+        };
       }
     }
   );
@@ -165,28 +216,13 @@ export function createMcpServer(mcpConfig: McpConfig = {}) {
       message: z.string().describe("The message content to send")
     },
     async ({ number, message }) => {
-      ensureClientReady();
-      
       try {
-        const sanitized_number = number.toString().replace(/[- )(]/g, "");
-        const number_details = await (await getClient()).getNumberId(sanitized_number);
-
-        if (!number_details) {
-          return {
-            content: [{ 
-              type: "text", 
-              text: `Error: Mobile number ${number} is not registered on WhatsApp` 
-            }],
-            isError: true
-          };
-        }
-
-        const sendMessageData = await (await getClient()).sendMessage(number_details._serialized, message);
+        const result = await service.sendMessage(number, message);
         
         return {
           content: [{ 
             type: "text", 
-            text: `Message sent successfully to ${number}. Message ID: ${sendMessageData.id.id}` 
+            text: `Message sent successfully to ${number}. Message ID: ${result.messageId}` 
           }]
         };
       } catch (error) {

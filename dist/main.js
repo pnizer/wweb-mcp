@@ -11,16 +11,25 @@ const whatsapp_client_1 = require("./whatsapp-client");
 const yargs_1 = __importDefault(require("yargs"));
 const helpers_1 = require("yargs/helpers");
 const api_1 = require("./api");
+// Check if running in Docker container based on environment variable
+const isDockerContainer = process.env.DOCKER_CONTAINER === 'true';
 // Define command line arguments
 const argv = (0, yargs_1.default)((0, helpers_1.hideBin)(process.argv))
     .option('mode', {
     alias: 'm',
-    description: 'Run mode: mcp or api',
+    description: 'Run mode: mcp or whatsapp-api',
     type: 'string',
-    choices: ['mcp', 'api'],
+    choices: ['mcp', 'whatsapp-api'],
     default: 'mcp'
 })
     .option('mcp-mode', {
+    alias: 'c',
+    description: 'MCP connection mode: standalone (direct WhatsApp client) or api (connect to WhatsApp API)',
+    type: 'string',
+    choices: ['standalone', 'api'],
+    default: 'standalone'
+})
+    .option('transport', {
     alias: 't',
     description: 'MCP transport mode: sse or command',
     type: 'string',
@@ -32,6 +41,11 @@ const argv = (0, yargs_1.default)((0, helpers_1.hideBin)(process.argv))
     description: 'Port for SSE server',
     type: 'number',
     default: 3002
+})
+    .option('api-port', {
+    description: 'Port for WhatsApp API server',
+    type: 'number',
+    default: 3001
 })
     .option('qr-code-file', {
     alias: 'q',
@@ -51,17 +65,11 @@ const argv = (0, yargs_1.default)((0, helpers_1.hideBin)(process.argv))
     choices: ['local', 'none'],
     default: 'local'
 })
-    .option('docker-container', {
-    alias: 'd',
-    description: 'Running in Docker container',
-    type: 'boolean',
-    default: false
-})
-    .option('eagerly-initialize-client', {
-    alias: 'e',
-    description: 'Initialize WhatsApp client eagerly',
-    type: 'boolean',
-    default: false
+    .option('api-base-url', {
+    alias: 'b',
+    description: 'API base URL for MCP when using api mode',
+    type: 'string',
+    default: 'http://localhost:3001/api'
 })
     .help()
     .alias('help', 'h')
@@ -74,17 +82,22 @@ async function main() {
             qrCodeFile: argv['qr-code-file'],
             authDataPath: argv['auth-data-path'],
             authStrategy: argv['auth-strategy'],
-            dockerContainer: argv['docker-container']
+            dockerContainer: isDockerContainer
         };
         // Create MCP configuration from command line arguments
         const mcpConfig = {
             qrCodeFile: argv['qr-code-file'],
-            eagerlyInitializeClient: argv['eagerly-initialize-client']
+            // Always eagerly initialize client
+            useApiClient: argv['mcp-mode'] === 'api',
+            apiBaseUrl: argv['api-base-url'],
+            whatsappConfig: whatsAppConfig
         };
         if (argv.mode === 'mcp') {
+            console.error(`Starting MCP server in ${argv['mcp-mode']} mode...`);
+            console.error(mcpConfig);
             // Create and start MCP server
             const server = (0, mcp_server_1.createMcpServer)(mcpConfig);
-            if (argv['mcp-mode'] === 'sse') {
+            if (argv['transport'] === 'sse') {
                 const app = (0, express_1.default)();
                 let transport;
                 app.get("/sse", async (_req, res) => {
@@ -96,28 +109,28 @@ async function main() {
                     await transport?.handlePostMessage(req, res);
                 });
                 app.listen(argv['sse-port'], () => {
-                    console.error(`MCP server is running on port ${argv['sse-port']}`);
+                    console.error(`MCP server is running on port ${argv['sse-port']} in ${argv['mcp-mode']} mode`);
                 });
             }
-            else if (argv['mcp-mode'] === 'command') {
+            else if (argv['transport'] === 'command') {
                 try {
                     const transport = new stdio_js_1.StdioServerTransport();
                     await server.connect(transport);
-                    console.error('WhatsApp MCP server started successfully');
+                    console.error(`WhatsApp MCP server started successfully in ${argv['mcp-mode']} mode`);
                 }
                 catch (error) {
                     console.error("Error connecting to MCP server", error);
                 }
                 process.stdin.on("close", () => {
-                    console.error("Puppeteer MCP Server closed");
+                    console.error("WhatsApp MCP Server closed");
                     server.close();
                 });
             }
             else {
-                throw new Error(`Invalid MCP mode: ${argv['mcp-mode']}`);
+                throw new Error(`Invalid transport mode: ${argv['transport']}`);
             }
         }
-        else if (argv.mode === 'api') {
+        else if (argv.mode === 'whatsapp-api') {
             // Run as WhatsApp Web Client API
             console.error('Starting WhatsApp Web Client API...');
             const client = (0, whatsapp_client_1.createWhatsAppClient)(whatsAppConfig);
@@ -126,9 +139,10 @@ async function main() {
             const app = (0, express_1.default)();
             // Configure middleware to parse JSON request bodies
             app.use(express_1.default.json());
-            app.use('/api', (0, api_1.routerFactory)({ client }));
-            app.listen(3001, () => {
-                console.error('WhatsApp Web Client API started successfully');
+            app.use('/api', (0, api_1.routerFactory)(client));
+            const apiPort = argv['api-port'];
+            app.listen(apiPort, () => {
+                console.error(`WhatsApp Web Client API started successfully on port ${apiPort}`);
             });
             // Keep the process running
             process.on('SIGINT', async () => {

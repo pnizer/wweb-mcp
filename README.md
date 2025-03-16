@@ -8,6 +8,7 @@ WhatsApp Web MCP provides a seamless integration between WhatsApp Web and AI mod
 - Creating a standardized interface through the Model Context Protocol (MCP)
 - Offering MCP Server access to WhatsApp functionality
 - Providing flexible deployment options through SSE or Command modes
+- Supporting both direct WhatsApp client integration and API-based connectivity
 
 ## Installation
 
@@ -18,24 +19,35 @@ WhatsApp Web MCP provides a seamless integration between WhatsApp Web and AI mod
    cd wweb-mcp
    ```
 
-2. Build with Docker:
+2. Install globally or use with npx:
+   ```bash
+   # Install globally
+   npm install -g .
+   
+   # Or use with npx directly
+   npx .
+   ```
+
+3. Build with Docker:
    ```bash
    docker build . -t wweb-mcp:latest
    ```
 
 ## Configuration
 
-### Environment Variables
+### Command Line Options
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `MCP_MODE` | Operation mode (`sse` or `command`) | No | sse |
-| `SSE_PORT` | Port for SSE server | No | 3001 |
-| `AUTH_STRATEGY` | Authentication strategy (`local` or `none`) | No | `none` |
-| `AUTH_DATA_PATH` | Path for authentication data storage | No | `.wwebjs_auth` |
-| `QR_CODE_FILE_NAME` | Path to save QR code image | No | - |
-| `EAGERLY_INITIALIZE_CLIENT` | Initialize the Whatsapp Web client as soon as the process started | No | `false` |
-
+| Option | Alias | Description | Choices | Default |
+|--------|-------|-------------|---------|---------|
+| `--mode` | `-m` | Run mode | `mcp`, `whatsapp-api` | `mcp` |
+| `--mcp-mode` | `-c` | MCP connection mode | `standalone`, `api` | `standalone` |
+| `--transport` | `-t` | MCP transport mode | `sse`, `command` | `sse` |
+| `--sse-port` | `-p` | Port for SSE server | - | `3002` |
+| `--api-port` | - | Port for WhatsApp API server | - | `3001` |
+| `--qr-code-file` | `-q` | File to save QR code to | - | - |
+| `--auth-data-path` | `-a` | Path to store authentication data | - | `.wwebjs_auth` |
+| `--auth-strategy` | `-s` | Authentication strategy | `local`, `none` | `local` |
+| `--api-base-url` | `-b` | API base URL for MCP when using api mode | - | `http://localhost:3001/api` |
 
 ### Authentication Methods
 
@@ -55,37 +67,52 @@ export AUTH_DATA_PATH=/path/to/auth/storage
 
 ## Usage
 
-### Starting the Server
+### Running Modes
 
-1. Command Mode:
-   ```bash
-   wweb-mcp
-   ```
+#### WhatsApp API Server
+Run a standalone WhatsApp API server that exposes WhatsApp functionality through REST endpoints:
+```bash
+npx wweb-mcp --mode whatsapp-api --api-port 3001
+```
 
-2. SSE Mode:
-   ```bash
-   export MCP_MODE=sse
-   export SSE_PORT=3001
-   wweb-mcp
-   ```
+#### MCP Server (Standalone)
+Run an MCP server that directly connects to WhatsApp Web:
+```bash
+npx wweb-mcp --mode mcp --mcp-mode standalone --transport sse --sse-port 3002
+```
+
+#### MCP Server (API Client)
+Run an MCP server that connects to the WhatsApp API server:
+```bash
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --transport sse --sse-port 3002
+```
 
 ### Available Tools
 
-| Tool | Description |
-|------|-------------|
-| `send_message` | Send messages to WhatsApp contacts |
-| `get_status` | Check WhatsApp client connection status |
-| `search_contacts` | Search for contacts by name or number |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_status` | Check WhatsApp client connection status | None |
+| `send_message` | Send messages to WhatsApp contacts | `number`: Phone number to send to<br>`message`: Text content to send |
+| `search_contacts` | Search for contacts by name or number | `query`: Search term to find contacts |
+| `get_messages` | Retrieve messages from a specific chat | `number`: Phone number to get messages from<br>`limit` (optional): Number of messages to retrieve |
+| `get_chats` | Get a list of all WhatsApp chats | None |
+
+### Available Resources
+
+| Resource URI | Description |
+|--------------|-------------|
+| `whatsapp://contacts` | List of all WhatsApp contacts |
+| `whatsapp://messages/{number}` | Messages from a specific chat |
+| `whatsapp://chats` | List of all WhatsApp chats |
 
 ### AI Integration
 
 #### Claude Desktop Integration
 
-1. Execute Docker with `EAGERLY_INITIALIZE_CLIENT=true` so you can scan the QR code and save the
-session in the volume. 
+1. Execute Docker to scan the QR code and save the session in the volume:
 
 ```shell
-docker run -i -e MCP_MODE=command -e AUTH_STRATEGY=local -e AUTH_DATA_PATH=/wwebjs_auth  EAGERLY_INITIALIZE_CLIENT=true -v wweb-mcp:/wwebjs_auth --rm wweb-mcp:latest
+docker run -i -e MCP_MODE=command -e AUTH_STRATEGY=local -e AUTH_DATA_PATH=/wwebjs_auth -v wweb-mcp:/wwebjs_auth --rm wweb-mcp:latest
 ```
 
 2. Add the following to your Claude Desktop configuration:
@@ -107,11 +134,10 @@ docker run -i -e MCP_MODE=command -e AUTH_STRATEGY=local -e AUTH_DATA_PATH=/wweb
         }
     }
 }
-
 ```
 
-2. Restart Claude Desktop
-3. The WhatsApp functionality will be available through Claude's interface
+3. Restart Claude Desktop
+4. The WhatsApp functionality will be available through Claude's interface
 
 ### Prompt Templates
 
@@ -119,16 +145,40 @@ The system includes pre-built prompts for common tasks:
 - `compose_message`: Generate contextually appropriate messages
 - `analyze_conversation`: Analyze chat history and extract insights
 
+## Architecture
+
+The project is structured with a clean separation of concerns:
+
+### Components
+
+1. **WhatsAppService**: Core business logic for interacting with WhatsApp
+2. **WhatsAppApiClient**: Client for connecting to the WhatsApp API server
+3. **API Router**: Express routes for the REST API
+4. **MCP Server**: Model Context Protocol implementation
+
+### Deployment Options
+
+1. **WhatsApp API Server**: Standalone REST API server
+2. **MCP Server (Standalone)**: Direct connection to WhatsApp Web
+3. **MCP Server (API Client)**: Connection to WhatsApp API server
+
+This architecture allows for flexible deployment scenarios, including:
+- Running the API server and MCP server on different machines
+- Using the MCP server as a client to an existing API server
+- Running everything on a single machine for simplicity
+
 ## Development
 
 ### Project Structure
 
 ```
 src/
-├── whatsapp-client.ts   # WhatsApp Web client implementation
-├── server.ts            # REST API server
-├── mcp-server.ts        # MCP protocol implementation
-└── main.ts              # Application entry point
+├── whatsapp-client.ts     # WhatsApp Web client implementation
+├── whatsapp-service.ts    # Core business logic
+├── whatsapp-api-client.ts # Client for the WhatsApp API
+├── api.ts                 # REST API router
+├── mcp-server.ts          # MCP protocol implementation
+└── main.ts                # Application entry point
 ```
 
 ### Building from Source

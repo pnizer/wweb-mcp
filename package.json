@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": "dist/main.js",
   "bin": {
-    "wweb-mcp": "bin/wweb-mcp.js"
+    "wweb-mcp": "bin.js"
   },
   "scripts": {
     "build": "tsc",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@types/yargs": "^17.0.33",
+    "axios": "^1.8.3",
     "express": "^5.0.1",
     "puppeteer": "^18.2.1",
     "qrcode": "^1.5.4",
