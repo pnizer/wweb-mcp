@@ -124,6 +124,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `get_group_messages` | Retrieve messages from a group | `groupId`: ID of the group<br>`limit` (optional): Number of messages to retrieve |
 | `send_group_message` | Send a message to a group | `groupId`: ID of the group<br>`message`: Text content to send |
 | `search_groups` | Search for groups by name, description, or member names | `query`: Search term to find groups |
+| `get_group_by_id` | Get detailed information about a specific group | `groupId`: ID of the group to get |
 
 ### Available Resources
 
@@ -154,6 +155,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `/api/groups` | GET | Get all groups | None |
 | `/api/groups/search` | GET | Search for groups | `query`: Search term |
 | `/api/groups/create` | POST | Create a new group | `name`: Group name<br>`participants`: Array of numbers |
+| `/api/groups/{groupId}` | GET | Get detailed information about a specific group | None |
 | `/api/groups/{groupId}/messages` | GET | Get messages from a group | `limit` (query): Number of messages |
 | `/api/groups/{groupId}/participants/add` | POST | Add members to a group | `participants`: Array of numbers |
 | `/api/groups/send` | POST | Send a message to a group | `groupId`: Group ID<br>`message`: Message content |

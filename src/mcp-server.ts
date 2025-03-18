@@ -519,5 +519,36 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     },
   );
 
+  // Tool to get group by ID
+  server.tool(
+    'get_group_by_id',
+    {
+      groupId: z.string().describe('The ID of the group to get'),
+    },
+    async ({ groupId }) => {
+      try {
+        const group = await service.getGroupById(groupId);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(group, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error getting group by ID: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
   return server;
 }

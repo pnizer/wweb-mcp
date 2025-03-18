@@ -36,6 +36,7 @@ describe('WhatsApp Service', () => {
       getChatById: jest.fn(),
       sendMessage: jest.fn(),
       createGroup: jest.fn(),
+      getContactById: jest.fn().mockResolvedValue({ pushname: 'Test User', name: undefined }),
       pupPage: {
         evaluate: jest.fn(),
       },
@@ -412,11 +413,13 @@ describe('WhatsApp Service', () => {
             id: '1234567890@c.us',
             number: '1234567890',
             isAdmin: true,
+            name: 'Test User',
           },
           {
             id: '0987654321@c.us',
             number: '0987654321',
             isAdmin: false,
+            name: 'Test User',
           },
         ],
         createdAt: timestampToIso(1615000000),

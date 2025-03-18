@@ -1,4 +1,4 @@
-import { Client, Contact, GroupChat } from 'whatsapp-web.js';
+import { Client, Contact, GroupChat, GroupParticipant } from 'whatsapp-web.js';
 // @ts-expect-error - ImportType not exported in whatsapp-web.js but needed for GroupChat functionality
 import _GroupChat from 'whatsapp-web.js/src/structures/GroupChat';
 import {
@@ -181,12 +181,10 @@ export class WhatsAppService {
         throw new Error('WhatsApp client not ready. Please try again later.');
       }
 
-      // Ensure name is valid
       if (typeof name !== 'string' || name.trim() === '') {
         throw new Error('Invalid group name');
       }
 
-      // Format participant IDs
       const formattedParticipants = participants.map(p => (p.includes('@c.us') ? p : `${p}@c.us`));
 
       // Create the group
@@ -201,8 +199,6 @@ export class WhatsAppService {
       } else if (result && typeof result === 'object') {
         // Safely access properties
         groupId = result.gid && result.gid._serialized ? result.gid._serialized : '';
-        // The inviteCode property is not guaranteed in the type definitions,
-        // but may exist in the actual implementation
         inviteCode = (result as any).inviteCode;
       }
 
@@ -230,50 +226,22 @@ export class WhatsAppService {
         throw new Error('Invalid group ID');
       }
 
-      const formattedGroupId = groupId.includes('@g.us') ? groupId : `${groupId}@g.us`;
       const formattedParticipants = participants.map(p => (p.includes('@c.us') ? p : `${p}@c.us`));
+      const chat = await this.getRawGroup(groupId);
 
-      // @ts-expect-error - Using raw API to access methods not exposed in the Client type
-      const rawChat = await this.client.pupPage.evaluate(async chatId => {
-        // @ts-expect-error - Accessing window.WWebJS which is not typed but exists at runtime
-        return await window.WWebJS.getChat(chatId);
-      }, formattedGroupId);
+      const results = (await chat.addParticipants(formattedParticipants)) as
+        | Record<string, { code: number; message: string; isInviteV4Sent: boolean }>
+        | string;
 
-      // Check if it's a group chat
-      if (!rawChat.groupMetadata) {
-        throw new Error('The provided ID is not a group chat');
-      }
-
-      const chat = new _GroupChat(this.client, rawChat);
-
-      // Use addParticipants method from GroupChat if available
-      const chatAny = chat as GroupChat & {
-        addParticipants?: (participants: string[]) => Promise<Record<string, boolean> | unknown>;
-      };
-
-      // Add participants using the addParticipants method if available
-      const resultMap: Record<string, boolean> = {};
-
-      try {
-        const results = await chatAny.addParticipants(formattedParticipants);
-
-        // Handle different return types
-        if (typeof results === 'object') {
-          for (const [id, success] of Object.entries(results)) {
-            resultMap[id] = Boolean(success);
-          }
-        } else {
-          // If the result is not an object, assume success for all participants
-          for (const participant of formattedParticipants) {
-            resultMap[participant] = true;
-          }
+      const resultMap: Record<string, { code: number; message: string; isInviteV4Sent: boolean }> =
+        {};
+      if (typeof results === 'object') {
+        for (const [id, result] of Object.entries(results)) {
+          resultMap[id] = result;
         }
-      } catch (err) {
-        console.error('Error adding participants:', err);
-        // Handle the error by marking all as failed
-        for (const participant of formattedParticipants) {
-          resultMap[participant] = false;
-        }
+      } else {
+        // If the result is not an object, string is a error message
+        throw new Error(results);
       }
 
       // Process results
@@ -282,10 +250,10 @@ export class WhatsAppService {
 
       for (const [id, success] of Object.entries(resultMap)) {
         const number = id.split('@')[0];
-        if (success) {
+        if (success.code === 200) {
           added.push(number);
         } else {
-          failed.push({ number, reason: 'Failed to add participant' });
+          failed.push({ number, reason: success.message });
         }
       }
 
@@ -361,6 +329,11 @@ export class WhatsAppService {
     }
   }
 
+  async getUserName(id: string): Promise<string | undefined> {
+    const contact = await this.client.getContactById(id);
+    return contact.pushname || contact.name || undefined;
+  }
+
   async getGroups(): Promise<GroupResponse[]> {
     try {
       if (!this.client.info) {
@@ -382,19 +355,58 @@ export class WhatsAppService {
 
       logger.info(`Found ${groupChats.length} groups`);
 
-      const groups: GroupResponse[] = groupChats.map(chat => ({
+      const groups: GroupResponse[] = await Promise.all(
+        groupChats.map(async chat => ({
+          id: chat.id._serialized,
+          name: chat.name,
+          description: ((chat as any).groupMetadata || {}).subject || '',
+          participants: await Promise.all(
+            chat.participants.map(async participant => ({
+              id: participant.id._serialized,
+              number: participant.id.user,
+              isAdmin: participant.isAdmin,
+              name: await this.getUserName(participant.id._serialized),
+            })),
+          ),
+          createdAt: chat.timestamp ? timestampToIso(chat.timestamp) : new Date().toISOString(),
+        })),
+      );
+
+      return groups;
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch groups: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  async getGroupById(groupId: string): Promise<GroupResponse> {
+    try {
+      if (!this.client.info) {
+        throw new Error('WhatsApp client not ready. Please try again later.');
+      }
+
+      // Ensure groupId is valid
+      if (typeof groupId !== 'string' || groupId.trim() === '') {
+        throw new Error('Invalid group ID');
+      }
+
+      const chat = await this.getRawGroup(groupId);
+
+      return {
         id: chat.id._serialized,
         name: chat.name,
         description: ((chat as any).groupMetadata || {}).subject || '',
-        participants: chat.participants.map(participant => ({
-          id: participant.id._serialized,
-          number: participant.id.user,
-          isAdmin: participant.isAdmin,
-        })),
+        participants: await Promise.all(
+          chat.participants.map(async (participant: GroupParticipant) => ({
+            id: participant.id._serialized,
+            number: participant.id.user,
+            isAdmin: participant.isAdmin,
+            name: await this.getUserName(participant.id._serialized),
+          })),
+        ),
         createdAt: chat.timestamp ? timestampToIso(chat.timestamp) : new Date().toISOString(),
-      }));
-
-      return groups;
+      };
     } catch (error) {
       throw new Error(
         `Failed to fetch groups: ${error instanceof Error ? error.message : String(error)}`,
@@ -427,5 +439,23 @@ export class WhatsAppService {
         `Failed to search groups: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  private async getRawGroup(groupId: string): Promise<_GroupChat> {
+    // Format the group ID
+    const formattedGroupId = groupId.includes('@g.us') ? groupId : `${groupId}@g.us`;
+
+    // @ts-expect-error - Using raw API to access methods not exposed in the Client type
+    const rawChat = await this.client.pupPage.evaluate(async chatId => {
+      // @ts-expect-error - Accessing window.WWebJS which is not typed but exists at runtime
+      return await window.WWebJS.getChat(chatId);
+    }, formattedGroupId);
+
+    // Check if it's a group chat
+    if (!rawChat.groupMetadata) {
+      throw new Error('The provided ID is not a group chat');
+    }
+
+    return new _GroupChat(this.client, rawChat);
   }
 }

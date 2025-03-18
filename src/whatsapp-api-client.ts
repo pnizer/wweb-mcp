@@ -144,6 +144,15 @@ export class WhatsAppApiClient {
     }
   }
 
+  async getGroupById(groupId: string): Promise<GroupResponse> {
+    try {
+      const response = await this.axiosInstance.get(`/groups/${groupId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to fetch group by ID: ${error}`);
+    }
+  }
+
   async searchGroups(query: string): Promise<GroupResponse[]> {
     try {
       const response = await this.axiosInstance.get('/groups/search', {

@@ -361,6 +361,52 @@ export function routerFactory(client: Client): Router {
 
   /**
    * @swagger
+   * /api/groups/{groupId}:
+   *   get:
+   *     summary: Get a specific WhatsApp group by ID
+   *     parameters:
+   *       - in: path
+   *         name: groupId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: The ID of the group to get
+   *     responses:
+   *       200:
+   *         description: Returns the group details
+   *       404:
+   *         description: Group not found
+   *       500:
+   *         description: Server error
+   */
+  router.get('/groups/:groupId', async (req: Request, res: Response) => {
+    try {
+      const groupId = req.params.groupId;
+      const group = await whatsappService.getGroupById(groupId);
+      res.json(group);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('not ready')) {
+          res.status(503).json({ error: error.message });
+        } else if (error.message.includes('not found') || error.message.includes('invalid chat')) {
+          res.status(404).json({ error: error.message });
+        } else {
+          res.status(500).json({
+            error: 'Failed to fetch group',
+            details: error.message,
+          });
+        }
+      } else {
+        res.status(500).json({
+          error: 'Failed to fetch group',
+          details: String(error),
+        });
+      }
+    }
+  });
+
+  /**
+   * @swagger
    * /api/groups/{groupId}/messages:
    *   get:
    *     summary: Get messages from a specific group
