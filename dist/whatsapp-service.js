@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WhatsAppService = void 0;
 exports.timestampToIso = timestampToIso;
-// @ts-ignore
+// @ts-expect-error - ImportType not exported in whatsapp-web.js but needed for GroupChat functionality
 const GroupChat_1 = __importDefault(require("whatsapp-web.js/src/structures/GroupChat"));
 const logger_1 = __importDefault(require("./logger"));
 function timestampToIso(timestamp) {
@@ -178,21 +178,22 @@ class WhatsAppService {
             }
             const formattedGroupId = groupId.includes('@g.us') ? groupId : `${groupId}@g.us`;
             const formattedParticipants = participants.map(p => (p.includes('@c.us') ? p : `${p}@c.us`));
-            // @ts-ignore
+            // @ts-expect-error - Using raw API to access methods not exposed in the Client type
             const rawChat = await this.client.pupPage.evaluate(async (chatId) => {
-                // @ts-ignore
+                // @ts-expect-error - Accessing window.WWebJS which is not typed but exists at runtime
                 return await window.WWebJS.getChat(chatId);
             }, formattedGroupId);
             // Check if it's a group chat
-            // @ts-ignore
             if (!rawChat.groupMetadata) {
                 throw new Error('The provided ID is not a group chat');
             }
             const chat = new GroupChat_1.default(this.client, rawChat);
+            // Use addParticipants method from GroupChat if available
+            const chatAny = chat;
             // Add participants using the addParticipants method if available
             const resultMap = {};
             try {
-                const results = await chat.addParticipants(formattedParticipants);
+                const results = await chatAny.addParticipants(formattedParticipants);
                 // Handle different return types
                 if (typeof results === 'object') {
                     for (const [id, success] of Object.entries(results)) {
@@ -288,9 +289,10 @@ class WhatsAppService {
             if (!this.client.info) {
                 throw new Error('WhatsApp client not ready. Please try again later.');
             }
-            // @ts-ignore
+            // Get all chats
+            // @ts-expect-error - Using raw API to access methods not exposed in the Client type
             const rawChats = await this.client.pupPage.evaluate(async () => {
-                // @ts-ignore
+                // @ts-expect-error - Accessing window.WWebJS which is not typed but exists at runtime
                 return await window.WWebJS.getChats();
             });
             const groupChats = rawChats
@@ -307,7 +309,7 @@ class WhatsAppService {
                 participants: chat.participants.map(participant => ({
                     id: participant.id._serialized,
                     number: participant.id.user,
-                    isAdmin: participant.isAdmin
+                    isAdmin: participant.isAdmin,
                 })),
                 createdAt: chat.timestamp ? timestampToIso(chat.timestamp) : new Date().toISOString(),
             }));
