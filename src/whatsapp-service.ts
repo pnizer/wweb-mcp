@@ -10,7 +10,6 @@ import {
   GroupResponse,
   CreateGroupResponse,
   AddParticipantsResponse,
-  GroupParticipant,
 } from './types';
 import logger from './logger';
 

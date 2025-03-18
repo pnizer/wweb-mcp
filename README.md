@@ -119,6 +119,11 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `search_contacts` | Search for contacts by name or number | `query`: Search term to find contacts |
 | `get_messages` | Retrieve messages from a specific chat | `number`: Phone number to get messages from<br>`limit` (optional): Number of messages to retrieve |
 | `get_chats` | Get a list of all WhatsApp chats | None |
+| `create_group` | Create a new WhatsApp group | `name`: Name of the group<br>`participants`: Array of phone numbers to add |
+| `add_participants_to_group` | Add participants to an existing group | `groupId`: ID of the group<br>`participants`: Array of phone numbers to add |
+| `get_group_messages` | Retrieve messages from a group | `groupId`: ID of the group<br>`limit` (optional): Number of messages to retrieve |
+| `send_group_message` | Send a message to a group | `groupId`: ID of the group<br>`message`: Text content to send |
+| `search_groups` | Search for groups by name, description, or member names | `query`: Search term to find groups |
 
 ### Available Resources
 
@@ -127,6 +132,31 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `whatsapp://contacts` | List of all WhatsApp contacts |
 | `whatsapp://messages/{number}` | Messages from a specific chat |
 | `whatsapp://chats` | List of all WhatsApp chats |
+| `whatsapp://groups` | List of all WhatsApp groups |
+| `whatsapp://groups/search` | Search for groups by name, description, or member names |
+| `whatsapp://groups/{groupId}/messages` | Messages from a specific group |
+
+### REST API Endpoints
+
+#### Contacts & Messages
+| Endpoint | Method | Description | Parameters |
+|----------|--------|-------------|------------|
+| `/api/status` | GET | Get WhatsApp connection status | None |
+| `/api/contacts` | GET | Get all contacts | None |
+| `/api/contacts/search` | GET | Search for contacts | `query`: Search term |
+| `/api/chats` | GET | Get all chats | None |
+| `/api/messages/{number}` | GET | Get messages from a chat | `limit` (query): Number of messages |
+| `/api/send` | POST | Send a message | `number`: Recipient<br>`message`: Message content |
+
+#### Group Management
+| Endpoint | Method | Description | Parameters |
+|----------|--------|-------------|------------|
+| `/api/groups` | GET | Get all groups | None |
+| `/api/groups/search` | GET | Search for groups | `query`: Search term |
+| `/api/groups/create` | POST | Create a new group | `name`: Group name<br>`participants`: Array of numbers |
+| `/api/groups/{groupId}/messages` | GET | Get messages from a group | `limit` (query): Number of messages |
+| `/api/groups/{groupId}/participants/add` | POST | Add members to a group | `participants`: Array of numbers |
+| `/api/groups/send` | POST | Send a message to a group | `groupId`: Group ID<br>`message`: Message content |
 
 ### AI Integration
 
@@ -205,12 +235,6 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 5. Restart Claude Desktop
 6. The WhatsApp functionality will be available through Claude's interface
-
-### Prompt Templates
-
-The system includes pre-built prompts for common tasks:
-- `compose_message`: Generate contextually appropriate messages
-- `analyze_conversation`: Analyze chat history and extract insights
 
 ## Architecture
 
