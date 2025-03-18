@@ -5,6 +5,9 @@ import {
   ChatResponse,
   MessageResponse,
   SendMessageResponse,
+  GroupResponse,
+  CreateGroupResponse,
+  AddParticipantsResponse,
 } from './types';
 
 export class WhatsAppApiClient {
@@ -81,6 +84,74 @@ export class WhatsAppApiClient {
       return response.data;
     } catch (error) {
       throw new Error(`Failed to send message: ${error}`);
+    }
+  }
+
+  async createGroup(name: string, participants: string[]): Promise<CreateGroupResponse> {
+    try {
+      const response = await this.axiosInstance.post('/groups', {
+        name,
+        participants,
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to create group: ${error}`);
+    }
+  }
+
+  async addParticipantsToGroup(
+    groupId: string,
+    participants: string[],
+  ): Promise<AddParticipantsResponse> {
+    try {
+      const response = await this.axiosInstance.post(`/groups/${groupId}/participants/add`, {
+        participants,
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to add participants to group: ${error}`);
+    }
+  }
+
+  async getGroupMessages(groupId: string, limit: number = 10): Promise<MessageResponse[]> {
+    try {
+      const response = await this.axiosInstance.get(`/groups/${groupId}/messages`, {
+        params: { limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to fetch group messages: ${error}`);
+    }
+  }
+
+  async sendGroupMessage(groupId: string, message: string): Promise<SendMessageResponse> {
+    try {
+      const response = await this.axiosInstance.post(`/groups/${groupId}/send`, {
+        message,
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to send group message: ${error}`);
+    }
+  }
+
+  async getGroups(): Promise<GroupResponse[]> {
+    try {
+      const response = await this.axiosInstance.get('/groups');
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to fetch groups: ${error}`);
+    }
+  }
+
+  async searchGroups(query: string): Promise<GroupResponse[]> {
+    try {
+      const response = await this.axiosInstance.get('/groups/search', {
+        params: { query },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to search groups: ${error}`);
     }
   }
 }

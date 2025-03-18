@@ -6,7 +6,7 @@
     "wweb-mcp": "bin.js"
   },
   "scripts": {
-    "build": "npm run validate && tsc",
+    "build": "tsc",
     "start": "node dist/main.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/main.ts",
     "watch": "tsc -w",

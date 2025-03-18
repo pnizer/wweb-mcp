@@ -77,6 +77,71 @@ class WhatsAppApiClient {
             throw new Error(`Failed to send message: ${error}`);
         }
     }
+    async createGroup(name, participants) {
+        try {
+            const response = await this.axiosInstance.post('/groups', {
+                name,
+                participants,
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Failed to create group: ${error}`);
+        }
+    }
+    async addParticipantsToGroup(groupId, participants) {
+        try {
+            const response = await this.axiosInstance.post(`/groups/${groupId}/participants/add`, {
+                participants,
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Failed to add participants to group: ${error}`);
+        }
+    }
+    async getGroupMessages(groupId, limit = 10) {
+        try {
+            const response = await this.axiosInstance.get(`/groups/${groupId}/messages`, {
+                params: { limit },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Failed to fetch group messages: ${error}`);
+        }
+    }
+    async sendGroupMessage(groupId, message) {
+        try {
+            const response = await this.axiosInstance.post(`/groups/${groupId}/send`, {
+                message,
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Failed to send group message: ${error}`);
+        }
+    }
+    async getGroups() {
+        try {
+            const response = await this.axiosInstance.get('/groups');
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Failed to fetch groups: ${error}`);
+        }
+    }
+    async searchGroups(query) {
+        try {
+            const response = await this.axiosInstance.get('/groups/search', {
+                params: { query },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Failed to search groups: ${error}`);
+        }
+    }
 }
 exports.WhatsAppApiClient = WhatsAppApiClient;
 //# sourceMappingURL=whatsapp-api-client.js.map

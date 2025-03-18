@@ -251,5 +251,273 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     },
   );
 
+  // Resource to list groups
+  server.resource('groups', 'whatsapp://groups', async uri => {
+    try {
+      const groups = await service.getGroups();
+
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            text: JSON.stringify(groups, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch groups: ${error}`);
+    }
+  });
+
+  // Resource to search groups
+  server.resource(
+    'search_groups',
+    new ResourceTemplate('whatsapp://groups/search', { list: undefined }),
+    async (uri, _params) => {
+      try {
+        // Extract query parameter from URL search params
+        const queryString = uri.searchParams.get('query') || '';
+        const groups = await service.searchGroups(queryString);
+
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(groups, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        throw new Error(`Failed to search groups: ${error}`);
+      }
+    },
+  );
+
+  // Resource to get group messages
+  server.resource(
+    'group_messages',
+    new ResourceTemplate('whatsapp://groups/{groupId}/messages', { list: undefined }),
+    async (uri, { groupId }) => {
+      try {
+        // Ensure groupId is a string
+        const groupIdString = Array.isArray(groupId) ? groupId[0] : groupId;
+        const messages = await service.getGroupMessages(groupIdString, 10);
+
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: JSON.stringify(messages, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        throw new Error(`Failed to fetch group messages: ${error}`);
+      }
+    },
+  );
+
+  // Tool to create a group
+  server.tool(
+    'create_group',
+    {
+      name: z.string().describe('The name of the group to create'),
+      participants: z.array(z.string()).describe('Array of phone numbers to add to the group'),
+    },
+    async ({ name, participants }) => {
+      try {
+        const result = await service.createGroup(name, participants);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Group created successfully. Group ID: ${result.groupId}${
+                result.inviteCode ? `\nInvite code: ${result.inviteCode}` : ''
+              }`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error creating group: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // Tool to add participants to a group
+  server.tool(
+    'add_participants_to_group',
+    {
+      groupId: z.string().describe('The ID of the group to add participants to'),
+      participants: z.array(z.string()).describe('Array of phone numbers to add to the group'),
+    },
+    async ({ groupId, participants }) => {
+      try {
+        const result = await service.addParticipantsToGroup(groupId, participants);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Added ${result.added.length} participants to group ${groupId}${
+                result.failed && result.failed.length > 0
+                  ? `\nFailed to add ${result.failed.length} participants: ${JSON.stringify(
+                      result.failed,
+                    )}`
+                  : ''
+              }`,
+            },
+          ],
+        };
+      } catch (error) {
+        const errorMsg = String(error);
+
+        if (errorMsg.includes('not supported in the current version')) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Adding participants to groups is not supported with the current WhatsApp API configuration. This feature requires a newer version of whatsapp-web.js that has native support for adding participants.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error adding participants to group: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // Tool to get group messages
+  server.tool(
+    'get_group_messages',
+    {
+      groupId: z.string().describe('The ID of the group to get messages from'),
+      limit: z.number().optional().describe('The number of messages to get (default: 10)'),
+    },
+    async ({ groupId, limit = 10 }) => {
+      try {
+        const messages = await service.getGroupMessages(groupId, limit);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Retrieved ${messages.length} messages from group ${groupId}:\n${JSON.stringify(
+                messages,
+                null,
+                2,
+              )}`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error getting group messages: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // Tool to send a message to a group
+  server.tool(
+    'send_group_message',
+    {
+      groupId: z.string().describe('The ID of the group to send the message to'),
+      message: z.string().describe('The message content to send'),
+    },
+    async ({ groupId, message }) => {
+      try {
+        const result = await service.sendGroupMessage(groupId, message);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Message sent successfully to group ${groupId}. Message ID: ${result.messageId}`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error sending message to group: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // Tool to search groups
+  server.tool(
+    'search_groups',
+    {
+      query: z
+        .string()
+        .describe('Search query to find groups by name, description, or member names'),
+    },
+    async ({ query }) => {
+      try {
+        const groups = await service.searchGroups(query);
+
+        let noticeMsg = '';
+        if (!config.useApiClient) {
+          noticeMsg =
+            '\n\nNote: Some group details like descriptions or complete participant lists may be limited due to API restrictions.';
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Found ${groups.length} groups matching "${query}":\n${JSON.stringify(
+                groups,
+                null,
+                2,
+              )}${noticeMsg}`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error searching groups: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
   return server;
 }
