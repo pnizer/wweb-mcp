@@ -29,3 +29,29 @@ export interface MessageResponse {
 export interface SendMessageResponse {
   messageId: string;
 }
+
+export interface GroupResponse {
+  id: string;
+  name: string;
+  description?: string;
+  participants: GroupParticipant[];
+  createdAt: string;
+}
+
+export interface GroupParticipant {
+  id: string;
+  number: string;
+  name?: string;
+  isAdmin: boolean;
+}
+
+export interface CreateGroupResponse {
+  groupId: string;
+  inviteCode?: string;
+}
+
+export interface AddParticipantsResponse {
+  success: boolean;
+  added: string[];
+  failed?: { number: string; reason: string }[];
+}
