@@ -2,6 +2,8 @@ import { Client, LocalAuth, Message, NoAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import logger from './logger';
 import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
 
 // Configuration interface
 export interface WhatsAppConfig {
@@ -10,8 +12,28 @@ export interface WhatsAppConfig {
   dockerContainer?: boolean;
 }
 
+interface WebhookConfig {
+  url: string;
+  authToken?: string;
+  filters?: {
+    allowedNumbers?: string[];
+    allowPrivate?: boolean;
+    allowGroups?: boolean;
+  };
+}
+
+function loadWebhookConfig(dataPath: string): WebhookConfig | undefined {
+  const webhookConfigPath = path.join(dataPath, 'webhook.json');
+  if (!fs.existsSync(webhookConfigPath)) {
+    return undefined;
+  }
+  return JSON.parse(fs.readFileSync(webhookConfigPath, 'utf8'));
+}
+
 export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
   const authDataPath = config.authDataPath || '.wwebjs_auth';
+
+  const webhookConfig = loadWebhookConfig(authDataPath);
 
   // remove Chrome lock file if it exists
   try {
@@ -74,6 +96,45 @@ export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
   client.on('message', async (message: Message) => {
     const contact = await message.getContact();
     logger.debug(`${contact.pushname} (${contact.number}): ${message.body}`);
+    
+    // Process webhook if configured
+    if (webhookConfig) {
+      // Check filters
+      const isGroup = message.from.includes('@g.us');
+      
+      // Skip if filters don't match
+      if (
+        (isGroup && webhookConfig.filters?.allowGroups === false) ||
+        (!isGroup && webhookConfig.filters?.allowPrivate === false) ||
+        (webhookConfig.filters?.allowedNumbers?.length && 
+         !webhookConfig.filters.allowedNumbers.includes(contact.number))
+      ) {
+        return;
+      }
+      
+      // Send to webhook
+      try {
+        const response = await axios.post(webhookConfig.url, {
+          from: contact.number,
+          name: contact.pushname,
+          message: message.body,
+          isGroup,
+          timestamp: message.timestamp,
+          messageId: message.id._serialized
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(webhookConfig.authToken ? { 'Authorization': `Bearer ${webhookConfig.authToken}` } : {})
+          }
+        });
+        
+        if (response.status < 200 || response.status >= 300) {
+          logger.warn(`Webhook request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        logger.error('Error sending webhook:', error);
+      }
+    }
   });
 
   return client;

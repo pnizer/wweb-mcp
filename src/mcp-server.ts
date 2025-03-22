@@ -164,7 +164,7 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     'get_messages',
     {
       number: z.string().describe('The phone number to get messages from'),
-      limit: z.number().optional().describe('The number of messages to get (default: 10)'),
+      limit: z.number().describe('The number of messages to get (default: 10)'),
     },
     async ({ number, limit = 10 }) => {
       try {
@@ -410,7 +410,7 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     'get_group_messages',
     {
       groupId: z.string().describe('The ID of the group to get messages from'),
-      limit: z.number().optional().describe('The number of messages to get (default: 10)'),
+      limit: z.number().describe('The number of messages to get (default: 10)'),
     },
     async ({ groupId, limit = 10 }) => {
       try {
