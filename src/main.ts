@@ -75,6 +75,10 @@ function parseCommandLineArgs(): ReturnType<typeof yargs.parseSync> {
       type: 'string',
       default: '',
     })
+    .option('media-storage-path', {
+      description: 'Path to store media files from WhatsApp messages',
+      type: 'string',
+    })
     .option('log-level', {
       alias: 'l',
       description: 'Log level: error, warn, info, http, debug',
@@ -104,6 +108,7 @@ function createConfigurations(argv: ReturnType<typeof parseCommandLineArgs>): {
     authDataPath: argv['auth-data-path'] as string,
     authStrategy: argv['auth-strategy'] as 'local' | 'none',
     dockerContainer: isDockerContainer,
+    mediaStoragePath: argv['media-storage-path'] as string | undefined,
   };
 
   const mcpConfig: McpConfig = {

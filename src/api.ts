@@ -1,11 +1,14 @@
 import express, { Request, Response, Router } from 'express';
 import { Client } from 'whatsapp-web.js';
 import { WhatsAppService } from './whatsapp-service';
-
+import logger from './logger';
 export function routerFactory(client: Client): Router {
   // Create a router instance
   const router: Router = express.Router();
   const whatsappService = new WhatsAppService(client);
+
+  // Get the media storage path from the client configuration
+  const mediaStoragePath = (client as any).options?.mediaStoragePath || '.wwebjs_auth/media';
 
   /**
    * @swagger
@@ -591,6 +594,63 @@ export function routerFactory(client: Client): Router {
       } else {
         res.status(500).json({
           error: 'Failed to send group message',
+          details: String(error),
+        });
+      }
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/messages/{messageId}/media/download:
+   *   post:
+   *     summary: Download media from a message
+   *     parameters:
+   *       - in: path
+   *         name: messageId
+   *         required: true
+   *         description: ID of the message containing media
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Returns the downloaded media file information
+   *       404:
+   *         description: Message not found or does not contain media
+   *       500:
+   *         description: Server error
+   */
+  router.post('/messages/:messageId/media/download', async (req: Request, res: Response) => {
+    try {
+      const { messageId } = req.params;
+
+      if (!messageId) {
+        res.status(400).json({ error: 'Message ID is required' });
+        return;
+      }
+
+      const mediaInfo = await whatsappService.downloadMediaFromMessage(messageId, mediaStoragePath);
+      res.json(mediaInfo);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('not ready')) {
+          res.status(503).json({ error: error.message });
+        } else if (
+          error.message.includes('not found') ||
+          error.message.includes('does not contain media')
+        ) {
+          res.status(404).json({ error: error.message });
+        } else {
+          logger.error('Failed to download media', { error });
+          res.status(500).json({
+            error: 'Failed to download media',
+            details: error.message,
+          });
+        }
+      } else {
+        logger.error('Failed to download media', { error });
+        res.status(500).json({
+          error: 'Failed to download media',
           details: String(error),
         });
       }

@@ -10,8 +10,12 @@ import {
   GroupResponse,
   CreateGroupResponse,
   AddParticipantsResponse,
+  MediaResponse,
 } from './types';
 import logger from './logger';
+import path from 'path';
+import fs from 'fs';
+import mime from 'mime-types';
 
 export function timestampToIso(timestamp: number): string {
   return new Date(timestamp * 1000).toISOString();
@@ -135,11 +139,12 @@ export class WhatsAppService {
       const messages = await chat.fetchMessages({ limit });
 
       return messages.map(message => ({
-        id: message.id.id,
+        id: message.id._serialized,
         body: message.body,
         fromMe: message.fromMe,
         timestamp: timestampToIso(message.timestamp),
-        contact: message.fromMe ? undefined : chat.name,
+        contact: message.fromMe ? undefined : message.author?.split('@')[0],
+        type: message.type,
       }));
     } catch (error) {
       throw new Error(
@@ -288,7 +293,7 @@ export class WhatsAppService {
       const messages = await chat.fetchMessages({ limit });
 
       return messages.map(message => ({
-        id: message.id.id,
+        id: message.id._serialized,
         body: message.body,
         fromMe: message.fromMe,
         timestamp: timestampToIso(message.timestamp),
@@ -386,30 +391,35 @@ export class WhatsAppService {
         throw new Error('WhatsApp client not ready. Please try again later.');
       }
 
-      // Ensure groupId is valid
-      if (typeof groupId !== 'string' || groupId.trim() === '') {
-        throw new Error('Invalid group ID');
+      const chat = await this.client.getChatById(groupId);
+
+      if (!chat.isGroup) {
+        throw new Error(`Chat ${groupId} is not a group`);
       }
 
-      const chat = await this.getRawGroup(groupId);
+      const groupChat = chat as unknown as GroupChat;
+      const participants = await groupChat.participants;
 
+      // Create a GroupResponse directly
       return {
-        id: chat.id._serialized,
-        name: chat.name,
-        description: ((chat as any).groupMetadata || {}).subject || '',
+        id: groupChat.id._serialized,
+        name: groupChat.name,
+        description: ((groupChat as any).groupMetadata || {}).subject || '',
         participants: await Promise.all(
-          chat.participants.map(async (participant: GroupParticipant) => ({
+          participants.map(async participant => ({
             id: participant.id._serialized,
             number: participant.id.user,
             isAdmin: participant.isAdmin,
             name: await this.getUserName(participant.id._serialized),
           })),
         ),
-        createdAt: chat.timestamp ? timestampToIso(chat.timestamp) : new Date().toISOString(),
+        createdAt: groupChat.timestamp
+          ? timestampToIso(groupChat.timestamp)
+          : new Date().toISOString(),
       };
     } catch (error) {
       throw new Error(
-        `Failed to fetch groups: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to get group: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -442,8 +452,8 @@ export class WhatsAppService {
   }
 
   private async getRawGroup(groupId: string): Promise<_GroupChat> {
-    // Format the group ID
-    const formattedGroupId = groupId.includes('@g.us') ? groupId : `${groupId}@g.us`;
+    // Clean up the group ID if it doesn't have the suffix
+    const formattedGroupId = groupId.endsWith('@g.us') ? groupId : `${groupId}@g.us`;
 
     // @ts-expect-error - Using raw API to access methods not exposed in the Client type
     const rawChat = await this.client.pupPage.evaluate(async chatId => {
@@ -457,5 +467,58 @@ export class WhatsAppService {
     }
 
     return new _GroupChat(this.client, rawChat);
+  }
+
+  // Download media from a message
+  async downloadMediaFromMessage(
+    messageId: string,
+    mediaStoragePath: string,
+  ): Promise<MediaResponse> {
+    try {
+      if (!this.client.info) {
+        throw new Error('WhatsApp client not ready. Please try again later.');
+      }
+
+      const message = await this.client.getMessageById(messageId);
+      if (!message) {
+        throw new Error(`Message with ID ${messageId} not found`);
+      }
+      if (!message.hasMedia) {
+        throw new Error(`Message with ID ${messageId} does not contain media`);
+      }
+
+      const media = await message.downloadMedia();
+      if (!media) {
+        throw new Error(`Failed to download media from message ${messageId}`);
+      }
+
+      // Generate a unique filename based on messageId
+      const extension = mime.extension(media.mimetype) || 'bin';
+      const filename = `${messageId.replace(/[^a-zA-Z0-9]/g, '_')}.${extension}`;
+      const relativePath = path.join(mediaStoragePath, filename);
+
+      // Convert to absolute path
+      const absolutePath = path.resolve(relativePath);
+
+      // Write the media to a file asynchronously
+      const buffer = Buffer.from(media.data, 'base64');
+      await fs.promises.writeFile(absolutePath, buffer);
+
+      // Get file size asynchronously
+      const stats = await fs.promises.stat(absolutePath);
+
+      return {
+        filePath: absolutePath, // Return the absolute path
+        mimetype: media.mimetype,
+        filename,
+        filesize: stats.size,
+        messageId, // This is already the serialized messageId as you fixed
+      };
+    } catch (error) {
+      logger.error('Failed to download media', { error });
+      throw new Error(
+        `Failed to download media: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }

@@ -3,6 +3,23 @@ import { WhatsAppService } from '../../src/whatsapp-service';
 import { WhatsAppApiClient } from '../../src/whatsapp-api-client';
 import { createWhatsAppClient } from '../../src/whatsapp-client';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import fs from 'fs';
+import path from 'path';
+
+// Mock whatsapp-web.js to prevent Puppeteer dependency issues
+jest.mock('whatsapp-web.js', () => {
+  const mockClient = jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    on: jest.fn(),
+    getState: jest.fn().mockReturnValue('CONNECTED'),
+  }));
+
+  return {
+    Client: mockClient,
+    LocalAuth: jest.fn(),
+    NoAuth: jest.fn(),
+  };
+}, { virtual: true });
 
 // Mock dependencies
 jest.mock('../../src/whatsapp-service');
@@ -42,6 +59,27 @@ jest.mock('../../src/mcp-server', () => {
     }),
   };
 });
+
+// Mock fs module
+jest.mock('fs', () => ({
+  promises: {
+    mkdir: jest.fn().mockResolvedValue(undefined),
+    writeFile: jest.fn().mockResolvedValue(undefined),
+    stat: jest.fn().mockResolvedValue({ size: 12345 }),
+  },
+  existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
+  readFileSync: jest.fn().mockReturnValue('{}'),
+  writeFileSync: jest.fn(),
+  unlinkSync: jest.fn(),
+  rmSync: jest.fn(),
+}));
+
+// Mock path module
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  resolve: jest.fn(path => `/absolute${path}`),
+}));
 
 describe('MCP Server', () => {
   let mockWhatsAppService: jest.Mocked<WhatsAppService>;
@@ -101,4 +139,7 @@ describe('MCP Server', () => {
     // Verify WhatsApp client was created with correct configuration
     expect(createWhatsAppClient).toHaveBeenCalledWith(config.whatsappConfig);
   });
+
+  // We'll add a proper download_media_from_message tool test in a separate PR
+  it.todo('should register the download_media_from_message tool');
 });

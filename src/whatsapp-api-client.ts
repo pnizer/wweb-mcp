@@ -8,7 +8,16 @@ import {
   GroupResponse,
   CreateGroupResponse,
   AddParticipantsResponse,
+  MediaResponse,
 } from './types';
+
+// Helper function to convert errors to strings
+function errorToString(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
 
 export class WhatsAppApiClient {
   private baseUrl: string;
@@ -31,7 +40,7 @@ export class WhatsAppApiClient {
       const response = await this.axiosInstance.get('/status');
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to get client status: ${error}`);
+      throw new Error(`Failed to get client status: ${errorToString(error)}`);
     }
   }
 
@@ -40,7 +49,7 @@ export class WhatsAppApiClient {
       const response = await this.axiosInstance.get('/contacts');
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch contacts: ${error}`);
+      throw new Error(`Failed to fetch contacts: ${errorToString(error)}`);
     }
   }
 
@@ -51,7 +60,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to search contacts: ${error}`);
+      throw new Error(`Failed to search contacts: ${errorToString(error)}`);
     }
   }
 
@@ -60,7 +69,7 @@ export class WhatsAppApiClient {
       const response = await this.axiosInstance.get('/chats');
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch chats: ${error}`);
+      throw new Error(`Failed to fetch chats: ${errorToString(error)}`);
     }
   }
 
@@ -71,7 +80,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch messages: ${error}`);
+      throw new Error(`Failed to fetch messages: ${errorToString(error)}`);
     }
   }
 
@@ -83,7 +92,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to send message: ${error}`);
+      throw new Error(`Failed to send message: ${errorToString(error)}`);
     }
   }
 
@@ -95,7 +104,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to create group: ${error}`);
+      throw new Error(`Failed to create group: ${errorToString(error)}`);
     }
   }
 
@@ -109,7 +118,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to add participants to group: ${error}`);
+      throw new Error(`Failed to add participants to group: ${errorToString(error)}`);
     }
   }
 
@@ -120,7 +129,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch group messages: ${error}`);
+      throw new Error(`Failed to fetch group messages: ${errorToString(error)}`);
     }
   }
 
@@ -131,7 +140,7 @@ export class WhatsAppApiClient {
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to send group message: ${error}`);
+      throw new Error(`Failed to send group message: ${errorToString(error)}`);
     }
   }
 
@@ -140,7 +149,7 @@ export class WhatsAppApiClient {
       const response = await this.axiosInstance.get('/groups');
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch groups: ${error}`);
+      throw new Error(`Failed to fetch groups: ${errorToString(error)}`);
     }
   }
 
@@ -149,18 +158,27 @@ export class WhatsAppApiClient {
       const response = await this.axiosInstance.get(`/groups/${groupId}`);
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch group by ID: ${error}`);
+      throw new Error(`Failed to fetch group by ID: ${errorToString(error)}`);
     }
   }
 
   async searchGroups(query: string): Promise<GroupResponse[]> {
     try {
-      const response = await this.axiosInstance.get('/groups/search', {
-        params: { query },
-      });
+      const response = await this.axiosInstance.get(
+        `/groups/search?query=${encodeURIComponent(query)}`,
+      );
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to search groups: ${error}`);
+      throw new Error(`Failed to search groups: ${errorToString(error)}`);
+    }
+  }
+
+  async downloadMediaFromMessage(messageId: string): Promise<MediaResponse> {
+    try {
+      const response = await this.axiosInstance.post(`/messages/${messageId}/media/download`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to download media from message: ${errorToString(error)}`);
     }
   }
 }

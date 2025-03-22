@@ -550,5 +550,41 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     },
   );
 
+  // Tool to download media from a message
+  server.tool(
+    'download_media_from_message',
+    {
+      messageId: z.string().describe('The ID of the message containing the media'),
+    },
+    async ({ messageId }) => {
+      try {
+        // Get the media storage path from the configuration
+        const mediaStoragePath = config.whatsappConfig?.mediaStoragePath || '.wwebjs_auth/media';
+
+        // Download the media
+        const mediaInfo = await service.downloadMediaFromMessage(messageId, mediaStoragePath);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(mediaInfo, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error downloading media: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
   return server;
 }
