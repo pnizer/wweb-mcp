@@ -20,6 +20,14 @@ Disclaimer from WhatsApp Web project:
 
 > This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or its affiliates. The official WhatsApp website can be found at whatsapp.com. "WhatsApp" as well as related names, marks, emblems and images are registered trademarks of their respective owners. Also it is not guaranteed you will not be blocked by using this method. WhatsApp does not allow bots or unofficial clients on their platform, so this shouldn't be considered totally safe.
 
+## Learning Resources
+
+To learn more about using WhatsApp Web MCP in real-world scenarios, check out these articles:
+
+* [**Integrating WhatsApp with AI: Guide to Setting Up a WhatsApp MCP server**](https://medium.com/@pnizer/integrating-whatsapp-with-ai-a-complete-guide-to-setting-up-whatsapp-web-mcp-with-claude-and-f7a2180dca78)  
+* [**Integrating OpenAI Agents Python SDK with Anthropic's MCP**](https://medium.com/@pnizer/integrating-openai-agents-python-sdk-with-anthropics-mcp-229c686d9033)
+
+
 ## Installation
 
 1. Clone the repository:
