@@ -96,38 +96,44 @@ export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
   client.on('message', async (message: Message) => {
     const contact = await message.getContact();
     logger.debug(`${contact.pushname} (${contact.number}): ${message.body}`);
-    
+
     // Process webhook if configured
     if (webhookConfig) {
       // Check filters
       const isGroup = message.from.includes('@g.us');
-      
+
       // Skip if filters don't match
       if (
         (isGroup && webhookConfig.filters?.allowGroups === false) ||
         (!isGroup && webhookConfig.filters?.allowPrivate === false) ||
-        (webhookConfig.filters?.allowedNumbers?.length && 
-         !webhookConfig.filters.allowedNumbers.includes(contact.number))
+        (webhookConfig.filters?.allowedNumbers?.length &&
+          !webhookConfig.filters.allowedNumbers.includes(contact.number))
       ) {
         return;
       }
-      
+
       // Send to webhook
       try {
-        const response = await axios.post(webhookConfig.url, {
-          from: contact.number,
-          name: contact.pushname,
-          message: message.body,
-          isGroup,
-          timestamp: message.timestamp,
-          messageId: message.id._serialized
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(webhookConfig.authToken ? { 'Authorization': `Bearer ${webhookConfig.authToken}` } : {})
-          }
-        });
-        
+        const response = await axios.post(
+          webhookConfig.url,
+          {
+            from: contact.number,
+            name: contact.pushname,
+            message: message.body,
+            isGroup,
+            timestamp: message.timestamp,
+            messageId: message.id._serialized,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(webhookConfig.authToken
+                ? { Authorization: `Bearer ${webhookConfig.authToken}` }
+                : {}),
+            },
+          },
+        );
+
         if (response.status < 200 || response.status >= 300) {
           logger.warn(`Webhook request failed with status ${response.status}`);
         }
