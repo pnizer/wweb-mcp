@@ -1,6 +1,6 @@
 # WhatsApp Web MCP
 
-A powerful bridge between WhatsApp Web and AI models using the Model Context Protocol (MCP). This project enables AI models like Claude to interact with WhatsApp through a standardized interface, making it easy to automate and enhance WhatsApp interactions programmatically.
+A Node.js application that connects WhatsApp Web with AI models through the Model Context Protocol (MCP). This project provides a standardized interface for programmatic interaction with WhatsApp, enabling automated messaging, contact management, and group chat functionality through AI-driven workflows.
 
 ## Overview
 
@@ -83,6 +83,49 @@ The API key is stored in the authentication data directory (specified by `--auth
 - Default method
 - Requires QR code scan on each startup
 - Suitable for testing and development
+
+### Webhook Configuration
+
+You can configure webhooks to receive incoming WhatsApp messages by creating a `webhook.json` file in your authentication data directory (specified by `--auth-data-path`).
+
+#### Webhook JSON Format
+
+```json
+{
+  "url": "https://your-webhook-endpoint.com/incoming",
+  "authToken": "your-optional-authentication-token",
+  "filters": {
+    "allowedNumbers": ["+1234567890", "+0987654321"],
+    "allowPrivate": true,
+    "allowGroups": false
+  }
+}
+```
+
+#### Configuration Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `url` | String | The webhook endpoint URL where message data will be sent |
+| `authToken` | String (optional) | Authentication token to be included in the Authorization header as a Bearer token |
+| `filters.allowedNumbers` | Array (optional) | List of phone numbers to accept messages from. If provided, only messages from these numbers will trigger the webhook |
+| `filters.allowPrivate` | Boolean (optional) | Whether to send private messages to the webhook. Default: `true` |
+| `filters.allowGroups` | Boolean (optional) | Whether to send group messages to the webhook. Default: `true` |
+
+#### Webhook Payload
+
+When a message is received and passes the filters, a POST request will be sent to the configured URL with the following JSON payload:
+
+```json
+{
+  "from": "+1234567890",
+  "name": "Contact Name",
+  "message": "Hello, world!",
+  "isGroup": false,
+  "timestamp": 1621234567890,
+  "messageId": "ABCDEF1234567890"
+}
+```
 
 ## Usage
 
@@ -321,7 +364,6 @@ The linting configuration enforces TypeScript best practices and maintains consi
 
 ## Upcoming Features
 
-- Create webhooks for incoming messages and other WhatsApp events
 - Support for sending media files (images, audio, documents)
 - Group chat management features
 - Contact management (add/remove contacts)
