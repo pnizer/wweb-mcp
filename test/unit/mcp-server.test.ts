@@ -96,15 +96,12 @@ describe('MCP Server', () => {
     (createWhatsAppClient as jest.Mock).mockReturnValue(mockWhatsAppClient);
 
     // Setup mock WhatsApp service
-    mockWhatsAppService = new WhatsAppService(mockWhatsAppClient) as jest.Mocked<WhatsAppService>;
-    (WhatsAppService as jest.Mock).mockImplementation(() => mockWhatsAppService);
+    mockWhatsAppService = jest.fn() as unknown as jest.Mocked<WhatsAppService>;
+    (WhatsAppService as jest.Mock).mockReturnValue(mockWhatsAppService);
 
     // Setup mock WhatsApp API client
-    mockWhatsAppApiClient = new WhatsAppApiClient(
-      'http://localhost',
-      'test-api-key'
-    ) as jest.Mocked<WhatsAppApiClient>;
-    (WhatsAppApiClient as jest.Mock).mockImplementation(() => mockWhatsAppApiClient);
+    mockWhatsAppApiClient = jest.fn() as unknown as jest.Mocked<WhatsAppApiClient>;
+    (WhatsAppApiClient as jest.Mock).mockReturnValue(mockWhatsAppApiClient);
   });
 
   it('should create an MCP server with default configuration', () => {
@@ -140,6 +137,30 @@ describe('MCP Server', () => {
     expect(createWhatsAppClient).toHaveBeenCalledWith(config.whatsappConfig);
   });
 
-  // We'll add a proper download_media_from_message tool test in a separate PR
-  it.todo('should register the download_media_from_message tool');
+  it('should register the download_media_from_message tool', () => {
+    // Create a mock server with tool method
+    const mockToolMethod = jest.fn();
+    const mockServer = { 
+      resource: jest.fn(),
+      tool: mockToolMethod 
+    };
+    
+    // Override the McpServer mock for this test
+    (require('@modelcontextprotocol/sdk/server/mcp.js').McpServer as jest.Mock)
+      .mockImplementationOnce(() => mockServer);
+      
+    // Create a mock client
+    const mockClient = { initialize: jest.fn() };
+    
+    // Call createMcpServer
+    const realCreateMcpServer = jest.requireActual('../../src/mcp-server').createMcpServer;
+    realCreateMcpServer({}, mockClient);
+    
+    // Verify the tool was registered
+    const calls = mockToolMethod.mock.calls;
+    const downloadMediaToolCall = calls.find(call => call[0] === 'download_media_from_message');
+    
+    expect(downloadMediaToolCall).toBeDefined();
+    expect(downloadMediaToolCall[1]).toHaveProperty('messageId');
+  });
 });

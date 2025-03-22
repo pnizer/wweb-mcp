@@ -20,8 +20,24 @@ describe('API Router', () => {
     mockClient = {} as Client;
 
     // Setup the mock WhatsApp service
-    mockWhatsAppService = new WhatsAppService(mockClient) as jest.Mocked<WhatsAppService>;
-    (WhatsAppService as jest.Mock).mockImplementation(() => mockWhatsAppService);
+    mockWhatsAppService = {
+      getStatus: jest.fn(),
+      getContacts: jest.fn(),
+      searchContacts: jest.fn(),
+      getMessages: jest.fn(),
+      getChats: jest.fn(),
+      getUserName: jest.fn(),
+      sendMessage: jest.fn(),
+      createGroup: jest.fn(),
+      getGroups: jest.fn(),
+      addParticipantsToGroup: jest.fn(),
+      getGroupMessages: jest.fn(),
+      sendGroupMessage: jest.fn(),
+      searchGroups: jest.fn(),
+      getGroupById: jest.fn(),
+      downloadMediaFromMessage: jest.fn(),
+    } as unknown as jest.Mocked<WhatsAppService>;
+    (WhatsAppService as jest.Mock).mockReturnValue(mockWhatsAppService);
 
     // Create an Express app and use the router
     app = express();
