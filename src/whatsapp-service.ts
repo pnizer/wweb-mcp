@@ -346,6 +346,7 @@ export class WhatsAppService {
       }
 
       // Get all chats
+      // It's not possible to use getGroups because WhatsApp Client is not setting the isGroup property
       // @ts-expect-error - Using raw API to access methods not exposed in the Client type
       const rawChats = await this.client.pupPage.evaluate(async () => {
         // @ts-expect-error - Accessing window.WWebJS which is not typed but exists at runtime
@@ -391,35 +392,31 @@ export class WhatsAppService {
         throw new Error('WhatsApp client not ready. Please try again later.');
       }
 
-      const chat = await this.client.getChatById(groupId);
-
-      if (!chat.isGroup) {
-        throw new Error(`Chat ${groupId} is not a group`);
+      // Ensure groupId is valid
+      if (typeof groupId !== 'string' || groupId.trim() === '') {
+        throw new Error('Invalid group ID');
       }
 
-      const groupChat = chat as unknown as GroupChat;
-      const participants = await groupChat.participants;
+      // It's not possible to use getChatById because WhatsApp Client is not setting the isGroup property
+      const chat = await this.getRawGroup(groupId);
 
-      // Create a GroupResponse directly
       return {
-        id: groupChat.id._serialized,
-        name: groupChat.name,
-        description: ((groupChat as any).groupMetadata || {}).subject || '',
+        id: chat.id._serialized,
+        name: chat.name,
+        description: ((chat as any).groupMetadata || {}).subject || '',
         participants: await Promise.all(
-          participants.map(async participant => ({
+          chat.participants.map(async (participant: GroupParticipant) => ({
             id: participant.id._serialized,
             number: participant.id.user,
             isAdmin: participant.isAdmin,
             name: await this.getUserName(participant.id._serialized),
           })),
         ),
-        createdAt: groupChat.timestamp
-          ? timestampToIso(groupChat.timestamp)
-          : new Date().toISOString(),
+        createdAt: chat.timestamp ? timestampToIso(chat.timestamp) : new Date().toISOString(),
       };
     } catch (error) {
       throw new Error(
-        `Failed to get group: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to fetch groups: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
