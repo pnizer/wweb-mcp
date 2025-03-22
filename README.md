@@ -178,6 +178,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `send_group_message` | Send a message to a group | `groupId`: ID of the group<br>`message`: Text content to send |
 | `search_groups` | Search for groups by name, description, or member names | `query`: Search term to find groups |
 | `get_group_by_id` | Get detailed information about a specific group | `groupId`: ID of the group to get |
+| `download_media_from_message` | Download media from a message | `messageId`: ID of the message containing media to download |
 
 ### Available Resources
 
@@ -201,6 +202,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `/api/chats` | GET | Get all chats | None |
 | `/api/messages/{number}` | GET | Get messages from a chat | `limit` (query): Number of messages |
 | `/api/send` | POST | Send a message | `number`: Recipient<br>`message`: Message content |
+| `/api/messages/{messageId}/media/download` | POST | Download media from a message | None |
 
 #### Group Management
 | Endpoint | Method | Description | Parameters |
@@ -390,12 +392,20 @@ This workflow requires an NPM_TOKEN secret to be configured in your GitHub repos
 ### Claude Desktop Integration Issues
    - It's not possible to start wweb-mcp in command standalone mode on Claude because Claude opens more than one process, multiple times, and each wweb-mcp needs to open a puppeteer session that cannot share the same WhatsApp authentication. Because of this limitation, we've split the app into MCP and API modes to allow for proper integration with Claude.
 
+## Features
+
+- Sending and receiving messages
+- Downloading media from messages (images, audio, documents)
+- Group chat management
+- Contact management and search
+- Message history retrieval
+
 ## Upcoming Features
 
 - Support for sending media files (images, audio, documents)
-- Group chat management features
+- Enhanced message templates for common scenarios
+- Advanced group management features
 - Contact management (add/remove contacts)
-- Message templates for common scenarios
 - Enhanced error handling and recovery
 
 ## Contributing

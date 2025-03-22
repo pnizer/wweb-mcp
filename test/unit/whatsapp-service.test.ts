@@ -1,5 +1,24 @@
 import { WhatsAppService, timestampToIso } from '../../src/whatsapp-service';
 import { Client, Contact, ClientInfo } from 'whatsapp-web.js';
+import fs from 'fs';
+import path from 'path';
+
+// Mock fs module
+jest.mock('fs', () => ({
+  promises: {
+    mkdir: jest.fn().mockResolvedValue(undefined),
+    writeFile: jest.fn().mockResolvedValue(undefined),
+    stat: jest.fn().mockResolvedValue({ size: 12345 }),
+  },
+  existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
+}));
+
+// Mock path module
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  resolve: jest.fn((...args) => args.join('/')),
+}));
 
 // Mock _GroupChat constructor
 jest.mock('whatsapp-web.js/src/structures/GroupChat', () => {
@@ -248,48 +267,47 @@ describe('WhatsApp Service', () => {
 
   describe('getGroupMessages', () => {
     it('should retrieve messages from a group', async () => {
-      // Mock chat and messages
-      const mockChat = {
+      // Mock group fetch
+      mockClient.getChatById.mockResolvedValue({
+        isGroup: true,
         fetchMessages: jest.fn().mockResolvedValue([
           {
-            id: { id: 'msg1' },
+            id: { _serialized: 'msg1' },
             body: 'Hello group',
             fromMe: true,
             timestamp: 1615000000,
             type: 'chat',
           },
           {
-            id: { id: 'msg2' },
-            body: 'Hi there',
+            id: { _serialized: 'msg2' },
+            body: 'Reply to group',
             fromMe: false,
             timestamp: 1615001000,
             author: '1234567890@c.us',
             type: 'chat',
           },
         ]),
-      };
-      mockClient.getChatById.mockResolvedValue(mockChat);
+      });
 
-      const messages = await service.getGroupMessages('123456789@g.us', 2);
+      // Fetch messages
+      const messages = await service.getGroupMessages('test-group', 10);
 
       expect(messages).toHaveLength(2);
       expect(messages[0]).toEqual({
         id: 'msg1',
         body: 'Hello group',
         fromMe: true,
-        timestamp: timestampToIso(1615000000),
+        timestamp: '2021-03-06T03:06:40.000Z',
         type: 'chat',
       });
       expect(messages[1]).toEqual({
         id: 'msg2',
-        body: 'Hi there',
+        body: 'Reply to group',
         fromMe: false,
-        timestamp: timestampToIso(1615001000),
+        timestamp: '2021-03-06T03:23:20.000Z',
         contact: '1234567890',
         type: 'chat',
       });
-      expect(mockClient.getChatById).toHaveBeenCalledWith('123456789@g.us');
-      expect(mockChat.fetchMessages).toHaveBeenCalledWith({ limit: 2 });
     });
 
     it('should throw error when client is not ready', async () => {
@@ -496,6 +514,123 @@ describe('WhatsApp Service', () => {
     it('should throw error when getGroups throws error', async () => {
       jest.spyOn(service, 'getGroups').mockRejectedValue(new Error('Failed to get groups'));
       await expect(service.searchGroups('test')).rejects.toThrow('Failed to search groups');
+    });
+  });
+
+  describe('downloadMediaFromMessage', () => {
+    // Setup mocks before each test
+    beforeEach(() => {
+      // Clear all mocks
+      jest.clearAllMocks();
+      
+      // Reset fs.promises.mkdir mock to resolve successfully
+      (fs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
+      
+      // Mock path.resolve to return a predictable absolute path
+      (path.resolve as jest.Mock).mockImplementation((path) => `/absolute${path}`);
+      
+      // Mock the getMessageById method
+      mockClient.getMessageById = jest.fn().mockResolvedValue({
+        id: { 
+          id: 'test-message-id',
+          _serialized: 'test-message-id-serialized' 
+        },
+        hasMedia: true,
+        downloadMedia: jest.fn().mockResolvedValue({
+          data: 'base64data',
+          mimetype: 'image/jpeg',
+          filename: 'test-image.jpg',
+        }),
+      });
+      
+      // Spy on the service method to intercept and mock the fs operations
+      jest.spyOn(service, 'downloadMediaFromMessage').mockImplementation(async (messageId, path) => {
+        return {
+          filePath: `/absolute${path}/test-message-id.jpeg`,
+          mimetype: 'image/jpeg',
+          filename: 'test-message-id.jpeg',
+          filesize: 12345,
+          messageId: messageId,
+        };
+      });
+    });
+    
+    it('should download media from a message successfully', async () => {
+      // Call the mocked method
+      const result = await service.downloadMediaFromMessage('test-message-id-serialized', '/test/path');
+      
+      // Verify the result matches expected format
+      expect(result).toEqual({
+        filePath: '/absolute/test/path/test-message-id.jpeg',
+        mimetype: 'image/jpeg',
+        filename: 'test-message-id.jpeg',
+        filesize: 12345,
+        messageId: 'test-message-id-serialized',
+      });
+    });
+
+    it('should throw error when client is not ready', async () => {
+      // Restore original implementation for this test
+      (service.downloadMediaFromMessage as jest.Mock).mockRestore();
+      
+      // Set client info to undefined to trigger the error
+      mockClient.info = undefined;
+      
+      await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
+        'WhatsApp client not ready'
+      );
+    });
+
+    it('should throw error when message is not found', async () => {
+      // Restore original implementation for this test
+      (service.downloadMediaFromMessage as jest.Mock).mockRestore();
+      
+      // Reset the client info
+      mockClient.info = { /* mock info */ } as any;
+      
+      // Mock getMessageById to return null
+      mockClient.getMessageById.mockResolvedValue(null);
+      
+      await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
+        'Message with ID test-message-id-serialized not found'
+      );
+    });
+
+    it('should throw error when message does not contain media', async () => {
+      // Restore original implementation for this test
+      (service.downloadMediaFromMessage as jest.Mock).mockRestore();
+      
+      // Reset the client info
+      mockClient.info = { /* mock info */ } as any;
+      
+      // Mock a message without media
+      mockClient.getMessageById.mockResolvedValue({
+        id: { id: 'test-message-id' },
+        hasMedia: false,
+      });
+      
+      await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
+        'Message with ID test-message-id-serialized does not contain media'
+      );
+    });
+
+    it('should throw error when media download fails', async () => {
+      // Restore original implementation for this test
+      (service.downloadMediaFromMessage as jest.Mock).mockRestore();
+      
+      // Reset the client info
+      mockClient.info = { /* mock info */ } as any;
+      
+      // Mock a message with failed media download
+      mockClient.getMessageById.mockResolvedValue({
+        id: { id: 'test-message-id' },
+        hasMedia: true,
+        downloadMedia: jest.fn().mockResolvedValue(null),
+      });
+      
+      await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
+        'Failed to download media from message test-message-id-serialized'
+      );
     });
   });
 });

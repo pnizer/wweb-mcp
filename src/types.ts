@@ -55,3 +55,11 @@ export interface AddParticipantsResponse {
   added: string[];
   failed?: { number: string; reason: string }[];
 }
+
+export interface MediaResponse {
+  filePath: string;
+  mimetype: string;
+  filename: string;
+  filesize: number;
+  messageId: string;
+}

@@ -20,8 +20,24 @@ describe('API Router', () => {
     mockClient = {} as Client;
 
     // Setup the mock WhatsApp service
-    mockWhatsAppService = new WhatsAppService(mockClient) as jest.Mocked<WhatsAppService>;
-    (WhatsAppService as jest.Mock).mockImplementation(() => mockWhatsAppService);
+    mockWhatsAppService = {
+      getStatus: jest.fn(),
+      getContacts: jest.fn(),
+      searchContacts: jest.fn(),
+      getMessages: jest.fn(),
+      getChats: jest.fn(),
+      getUserName: jest.fn(),
+      sendMessage: jest.fn(),
+      createGroup: jest.fn(),
+      getGroups: jest.fn(),
+      addParticipantsToGroup: jest.fn(),
+      getGroupMessages: jest.fn(),
+      sendGroupMessage: jest.fn(),
+      searchGroups: jest.fn(),
+      getGroupById: jest.fn(),
+      downloadMediaFromMessage: jest.fn(),
+    } as unknown as jest.Mocked<WhatsAppService>;
+    (WhatsAppService as jest.Mock).mockReturnValue(mockWhatsAppService);
 
     // Create an Express app and use the router
     app = express();
@@ -406,6 +422,108 @@ describe('API Router', () => {
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
       expect(mockWhatsAppService.sendGroupMessage).toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /api/messages/:messageId/media/download', () => {
+    it('should download media successfully', async () => {
+      // Setup mock response
+      const mockMediaInfo = {
+        filePath: '/absolute/path/to/media.jpeg',
+        mimetype: 'image/jpeg',
+        filename: 'media.jpeg',
+        filesize: 12345,
+        messageId: 'test-message-id-serialized',
+      };
+      mockWhatsAppService.downloadMediaFromMessage.mockResolvedValue(mockMediaInfo);
+
+      // Make request
+      const response = await request(app).post('/api/messages/test-message-id-serialized/media/download');
+
+      // Assertions
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockMediaInfo);
+      expect(mockWhatsAppService.downloadMediaFromMessage).toHaveBeenCalledWith(
+        'test-message-id-serialized',
+        expect.any(String) // mediaStoragePath
+      );
+    });
+
+    it('should return 400 when messageId is not provided', async () => {
+      // This test is for completeness, but it should never happen in practice
+      // due to Express routing
+      mockWhatsAppService.downloadMediaFromMessage.mockImplementation(async (messageId) => {
+        if (!messageId) {
+          throw new Error('Message ID is required');
+        }
+        return {} as any;
+      });
+
+      // Make request with empty messageId (this is a test edge case)
+      const response = await request(app).post('/api/messages//media/download');
+
+      // Assertions
+      expect(response.status).toBe(404); // Express will return 404 for this route
+    });
+
+    it('should return 503 when WhatsApp client is not ready', async () => {
+      // Setup mock error
+      mockWhatsAppService.downloadMediaFromMessage.mockRejectedValue(
+        new Error('WhatsApp client not ready. Please try again later.')
+      );
+
+      // Make request
+      const response = await request(app).post('/api/messages/test-message-id/media/download');
+
+      // Assertions
+      expect(response.status).toBe(503);
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('not ready');
+    });
+
+    it('should return 404 when message is not found', async () => {
+      // Setup mock error
+      mockWhatsAppService.downloadMediaFromMessage.mockRejectedValue(
+        new Error('Message with ID test-message-id not found')
+      );
+
+      // Make request
+      const response = await request(app).post('/api/messages/test-message-id/media/download');
+
+      // Assertions
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('not found');
+    });
+
+    it('should return 404 when message does not contain media', async () => {
+      // Setup mock error
+      mockWhatsAppService.downloadMediaFromMessage.mockRejectedValue(
+        new Error('Message with ID test-message-id does not contain media')
+      );
+
+      // Make request
+      const response = await request(app).post('/api/messages/test-message-id/media/download');
+
+      // Assertions
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('does not contain media');
+    });
+
+    it('should return 500 when there is an unexpected error', async () => {
+      // Setup mock error
+      mockWhatsAppService.downloadMediaFromMessage.mockRejectedValue(
+        new Error('Unexpected error')
+      );
+
+      // Make request
+      const response = await request(app).post('/api/messages/test-message-id/media/download');
+
+      // Assertions
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('Failed to download media');
     });
   });
 });

@@ -1,28 +1,48 @@
 import { createWhatsAppClient, WhatsAppConfig } from '../../src/whatsapp-client';
-import { Client } from 'whatsapp-web.js';
+import { Client, LocalAuth, NoAuth } from 'whatsapp-web.js';
 import fs from 'fs';
+import path from 'path';
 
-// Mock dependencies
+// Mock fs module
+jest.mock('fs', () => ({
+  promises: {
+    mkdir: jest.fn().mockResolvedValue(undefined),
+    writeFile: jest.fn().mockResolvedValue(undefined),
+    stat: jest.fn().mockResolvedValue({ size: 12345 }),
+  },
+  existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
+  readFileSync: jest.fn().mockReturnValue('{}'),
+  writeFileSync: jest.fn(),
+  unlinkSync: jest.fn(),
+  rmSync: jest.fn(),
+}));
+
+// Mock path module
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  resolve: jest.fn(path => `/absolute${path}`),
+}));
+
+// Mock whatsapp-web.js Client
 jest.mock('whatsapp-web.js', () => {
-  const mockClient = {
+  const mockLocalAuth = jest.fn();
+  const mockNoAuth = jest.fn();
+  const mockClient = jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
     on: jest.fn(),
-    initialize: jest.fn(),
-  };
+    getState: jest.fn().mockReturnValue('CONNECTED'),
+  }));
+
   return {
-    Client: jest.fn(() => mockClient),
-    LocalAuth: jest.fn(),
-    NoAuth: jest.fn(),
+    Client: mockClient,
+    LocalAuth: mockLocalAuth,
+    NoAuth: mockNoAuth,
   };
 });
 
 jest.mock('qrcode-terminal', () => ({
   generate: jest.fn(),
-}));
-
-jest.mock('fs', () => ({
-  rmSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  existsSync: jest.fn(),
 }));
 
 // Silence console.error during tests

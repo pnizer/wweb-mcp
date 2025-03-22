@@ -10,6 +10,7 @@ export interface WhatsAppConfig {
   authDataPath?: string;
   authStrategy?: 'local' | 'none';
   dockerContainer?: boolean;
+  mediaStoragePath?: string;
 }
 
 interface WebhookConfig {
@@ -32,8 +33,19 @@ function loadWebhookConfig(dataPath: string): WebhookConfig | undefined {
 
 export function createWhatsAppClient(config: WhatsAppConfig = {}): Client {
   const authDataPath = config.authDataPath || '.wwebjs_auth';
+  const mediaStoragePath = config.mediaStoragePath || path.join(authDataPath, 'media');
 
   const webhookConfig = loadWebhookConfig(authDataPath);
+
+  // Create media storage directory if it doesn't exist
+  if (!fs.existsSync(mediaStoragePath)) {
+    try {
+      fs.mkdirSync(mediaStoragePath, { recursive: true });
+      logger.info(`Created media storage directory: ${mediaStoragePath}`);
+    } catch (error) {
+      logger.error(`Failed to create media storage directory: ${error}`);
+    }
+  }
 
   // remove Chrome lock file if it exists
   try {
