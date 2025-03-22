@@ -1,5 +1,7 @@
 # WhatsApp Web MCP
 
+[![PR Checks](https://github.com/pnizer/wweb-mcp/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/pnizer/wweb-mcp/actions/workflows/pr-checks.yml)
+
 A Node.js application that connects WhatsApp Web with AI models through the Model Context Protocol (MCP). This project provides a standardized interface for programmatic interaction with WhatsApp, enabling automated messaging, contact management, and group chat functionality through AI-driven workflows.
 
 ## Overview
@@ -356,6 +358,24 @@ npm run validate
 ```
 
 The linting configuration enforces TypeScript best practices and maintains consistent code style across the project.
+
+### Publishing
+
+The project uses GitHub Actions for automated publishing to npm. The workflow handles:
+
+1. Version incrementing (`patch`, `minor`, or `major`)
+2. Git tagging with version prefixed by 'v' (e.g., v0.2.1)
+3. Publishing to npm with GitHub secrets
+
+To release a new version:
+
+1. Go to the GitHub repository Actions tab
+2. Select the "Publish Package" workflow
+3. Click "Run workflow"
+4. Choose the version increment type (patch, minor, or major)
+5. Click "Run workflow" to start the publishing process
+
+This workflow requires an NPM_TOKEN secret to be configured in your GitHub repository.
 
 ## Troubleshooting
 
