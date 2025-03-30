@@ -43,12 +43,12 @@ function parseCommandLineArgs(): ReturnType<typeof yargs.parseSync> {
       alias: 'p',
       description: 'Port for SSE server',
       type: 'number',
-      default: 3002,
+      default: 7002,
     })
     .option('api-port', {
       description: 'Port for WhatsApp API server',
       type: 'number',
-      default: 3001,
+      default: 7001,
     })
     .option('auth-data-path', {
       alias: 'a',
@@ -67,7 +67,7 @@ function parseCommandLineArgs(): ReturnType<typeof yargs.parseSync> {
       alias: 'b',
       description: 'Base URL for WhatsApp Web REST API when using api mode',
       type: 'string',
-      default: 'http://localhost:3001/api',
+      default: 'http://localhost:7001/api',
     })
     .option('api-key', {
       alias: 'k',
