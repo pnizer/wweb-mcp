@@ -175,20 +175,21 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api 
 
 ### Available Tools
 
-| Tool                          | Description                                             | Parameters                                                                                        |
-| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `get_status`                  | Check WhatsApp client connection status                 | None                                                                                              |
-| `send_message`                | Send messages to WhatsApp contacts                      | `number`: Phone number to send to<br>`message`: Text content to send                              |
-| `search_contacts`             | Search for contacts by name or number                   | `query`: Search term to find contacts                                                             |
-| `get_messages`                | Retrieve messages from a specific chat                  | `number`: Phone number to get messages from<br>`limit` (optional): Number of messages to retrieve |
-| `get_chats`                   | Get a list of all WhatsApp chats                        | None                                                                                              |
-| `create_group`                | Create a new WhatsApp group                             | `name`: Name of the group<br>`participants`: Array of phone numbers to add                        |
-| `add_participants_to_group`   | Add participants to an existing group                   | `groupId`: ID of the group<br>`participants`: Array of phone numbers to add                       |
-| `get_group_messages`          | Retrieve messages from a group                          | `groupId`: ID of the group<br>`limit` (optional): Number of messages to retrieve                  |
-| `send_group_message`          | Send a message to a group                               | `groupId`: ID of the group<br>`message`: Text content to send                                     |
-| `search_groups`               | Search for groups by name, description, or member names | `query`: Search term to find groups                                                               |
-| `get_group_by_id`             | Get detailed information about a specific group         | `groupId`: ID of the group to get                                                                 |
-| `download_media_from_message` | Download media from a message                           | `messageId`: ID of the message containing media to download                                       |
+| Tool                          | Description                                             | Parameters                                                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_status`                  | Check WhatsApp client connection status                 | None                                                                                                                                                                      |
+| `send_message`                | Send messages to WhatsApp contacts                      | `number`: Phone number to send to<br>`message`: Text content to send                                                                                                      |
+| `search_contacts`             | Search for contacts by name or number                   | `query`: Search term to find contacts                                                                                                                                     |
+| `get_messages`                | Retrieve messages from a specific chat                  | `number`: Phone number to get messages from<br>`limit` (optional): Number of messages to retrieve                                                                         |
+| `get_chats`                   | Get a list of all WhatsApp chats                        | None                                                                                                                                                                      |
+| `create_group`                | Create a new WhatsApp group                             | `name`: Name of the group<br>`participants`: Array of phone numbers to add                                                                                                |
+| `add_participants_to_group`   | Add participants to an existing group                   | `groupId`: ID of the group<br>`participants`: Array of phone numbers to add                                                                                               |
+| `get_group_messages`          | Retrieve messages from a group                          | `groupId`: ID of the group<br>`limit` (optional): Number of messages to retrieve                                                                                          |
+| `send_group_message`          | Send a message to a group                               | `groupId`: ID of the group<br>`message`: Text content to send                                                                                                             |
+| `search_groups`               | Search for groups by name, description, or member names | `query`: Search term to find groups                                                                                                                                       |
+| `get_group_by_id`             | Get detailed information about a specific group         | `groupId`: ID of the group to get                                                                                                                                         |
+| `download_media_from_message` | Download media from a message                           | `messageId`: ID of the message containing media to download                                                                                                               |
+| `send_media_message`          | Send a media message to a WhatsApp contact              | `number`: Phone number to send to<br>`mediaType`: Source type (`url` or `local`)<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption for the media |
 
 ### Available Resources
 
@@ -205,15 +206,16 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api 
 
 #### Contacts & Messages
 
-| Endpoint                                   | Method | Description                    | Parameters                                        |
-| ------------------------------------------ | ------ | ------------------------------ | ------------------------------------------------- |
-| `/api/status`                              | GET    | Get WhatsApp connection status | None                                              |
-| `/api/contacts`                            | GET    | Get all contacts               | None                                              |
-| `/api/contacts/search`                     | GET    | Search for contacts            | `query`: Search term                              |
-| `/api/chats`                               | GET    | Get all chats                  | None                                              |
-| `/api/messages/{number}`                   | GET    | Get messages from a chat       | `limit` (query): Number of messages               |
-| `/api/send`                                | POST   | Send a message                 | `number`: Recipient<br>`message`: Message content |
-| `/api/messages/{messageId}/media/download` | POST   | Download media from a message  | None                                              |
+| Endpoint                                   | Method | Description                    | Parameters                                                                                                                      |
+| ------------------------------------------ | ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/status`                              | GET    | Get WhatsApp connection status | None                                                                                                                            |
+| `/api/contacts`                            | GET    | Get all contacts               | None                                                                                                                            |
+| `/api/contacts/search`                     | GET    | Search for contacts            | `query`: Search term                                                                                                            |
+| `/api/chats`                               | GET    | Get all chats                  | None                                                                                                                            |
+| `/api/messages/{number}`                   | GET    | Get messages from a chat       | `limit` (query): Number of messages                                                                                             |
+| `/api/send`                                | POST   | Send a message                 | `number`: Recipient<br>`message`: Message content                                                                               |
+| `/api/send/media`                          | POST   | Send a media message           | `number`: Recipient<br>`mediaType`: `url` or `local`<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption |
+| `/api/messages/{messageId}/media/download` | POST   | Download media from a message  | None                                                                                                                            |
 
 #### Group Management
 
@@ -431,10 +433,11 @@ This workflow requires an NPM_TOKEN secret to be configured in your GitHub repos
 - Group chat management
 - Contact management and search
 - Message history retrieval
+- Sending media messages (images only)
 
 ## Upcoming Features
 
-- Support for sending media files (images, audio, documents)
+- Support for sending all media file types (video, audio, documents)
 - Enhanced message templates for common scenarios
 - Advanced group management features
 - Contact management (add/remove contacts)
