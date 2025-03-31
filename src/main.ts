@@ -43,7 +43,7 @@ function parseCommandLineArgs(): ReturnType<typeof yargs.parseSync> {
       alias: 'p',
       description: 'Port for SSE server',
       type: 'number',
-      default: 7002,
+      default: 3002,
     })
     .option('api-port', {
       description: 'Port for WhatsApp API server',

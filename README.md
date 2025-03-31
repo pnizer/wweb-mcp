@@ -61,7 +61,7 @@ To learn more about using WhatsApp Web MCP in real-world scenarios, check out th
 | `--mode`           | `-m`  | Run mode                                              | `mcp`, `whatsapp-api` | `mcp`                       |
 | `--mcp-mode`       | `-c`  | MCP connection mode                                   | `standalone`, `api`   | `standalone`                |
 | `--transport`      | `-t`  | MCP transport mode                                    | `sse`, `command`      | `sse`                       |
-| `--sse-port`       | `-p`  | Port for SSE server                                   | -                     | `7002`                      |
+| `--sse-port`       | `-p`  | Port for SSE server                                   | -                     | `3002`                      |
 | `--api-port`       | -     | Port for WhatsApp API server                          | -                     | `3001`                      |
 | `--auth-data-path` | `-a`  | Path to store authentication data                     | -                     | `.wwebjs_auth`              |
 | `--auth-strategy`  | `-s`  | Authentication strategy                               | `local`, `none`       | `local`                     |
@@ -158,7 +158,7 @@ npx wweb-mcp --mode whatsapp-api --api-port 3001
 Run an MCP server that directly connects to WhatsApp Web:
 
 ```bash
-npx wweb-mcp --mode mcp --mcp-mode standalone --transport sse --sse-port 7002
+npx wweb-mcp --mode mcp --mcp-mode standalone --transport sse --sse-port 3002
 ```
 
 #### MCP Server (API Client)
@@ -170,7 +170,7 @@ Run an MCP server that connects to the WhatsApp API server:
 npx wweb-mcp --mode whatsapp-api --api-port 3001
 
 # Then, start the MCP server with the API key
-npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key YOUR_API_KEY --transport sse --sse-port 7002
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key YOUR_API_KEY --transport sse --sse-port 3002
 ```
 
 ### Available Tools
