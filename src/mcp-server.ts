@@ -586,5 +586,45 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     },
   );
 
+  // Tool to send a media message
+  server.tool(
+    'send_media_message',
+    {
+      number: z.string().describe('The phone number to send the message to'),
+      mediaType: z.enum(['url', 'local']).describe('Whether the media is from a URL or local file'),
+      mediaLocation: z.string().describe('The URL or local file path of the image'),
+      caption: z.string().optional().describe('Optional caption for the image'),
+    },
+    async ({ number, mediaType, mediaLocation, caption }) => {
+      try {
+        const result = await service.sendMediaMessage({
+          number,
+          mediaType,
+          mediaLocation,
+          caption,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Media message sent successfully to ${number}.\nMessage ID: ${result.messageId}\nMedia Info:\n${JSON.stringify(result.mediaInfo, null, 2)}`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error sending media message: ${error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
   return server;
 }
