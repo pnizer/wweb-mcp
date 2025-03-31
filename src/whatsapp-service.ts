@@ -1,4 +1,4 @@
-import { Client, Contact, GroupChat, GroupParticipant } from 'whatsapp-web.js';
+import { Client, Contact, GroupChat, GroupParticipant, MessageMedia } from 'whatsapp-web.js';
 // @ts-expect-error - ImportType not exported in whatsapp-web.js but needed for GroupChat functionality
 import _GroupChat from 'whatsapp-web.js/src/structures/GroupChat';
 import {
@@ -11,6 +11,8 @@ import {
   CreateGroupResponse,
   AddParticipantsResponse,
   MediaResponse,
+  SendMediaMessageParams,
+  SendMediaMessageResponse,
 } from './types';
 import logger from './logger';
 import path from 'path';
@@ -515,6 +517,65 @@ export class WhatsAppService {
       logger.error('Failed to download media', { error });
       throw new Error(
         `Failed to download media: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  async sendMediaMessage({
+    number,
+    mediaType,
+    mediaLocation,
+    caption,
+  }: SendMediaMessageParams): Promise<SendMediaMessageResponse> {
+    try {
+      if (!this.client.info) {
+        throw new Error('WhatsApp client not ready. Please try again later.');
+      }
+
+      // Validate number
+      if (typeof number !== 'string' || number.trim() === '') {
+        throw new Error('Invalid phone number');
+      }
+
+      // Format the chat ID
+      const chatId = number.includes('@c.us') ? number : `${number}@c.us`;
+
+      // Create MessageMedia based on mediaType
+      let media: MessageMedia;
+      try {
+        if (mediaType === 'url') {
+          media = await MessageMedia.fromUrl(mediaLocation);
+        } else {
+          media = await MessageMedia.fromFilePath(mediaLocation);
+        }
+      } catch (error) {
+        throw new Error(
+          `Failed to load media from ${mediaType}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+
+      // Validate media type (ensure it's an image)
+      if (!media.mimetype.startsWith('image/')) {
+        throw new Error('Only image files are supported at this time');
+      }
+
+      // Send the media message
+      const messageOptions = caption ? { caption } : undefined;
+      const result = await this.client.sendMessage(chatId, media, messageOptions);
+
+      return {
+        messageId: result.id.id,
+        mediaInfo: {
+          mimetype: media.mimetype,
+          filename: media.filename || 'unknown',
+          size: media.data.length, // Base64 length as approximate size
+        },
+      };
+    } catch (error) {
+      throw new Error(
+        `Failed to send media message: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

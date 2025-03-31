@@ -657,5 +657,89 @@ export function routerFactory(client: Client): Router {
     }
   });
 
+  /**
+   * @swagger
+   * /api/send/media:
+   *   post:
+   *     summary: Send a media message to a WhatsApp contact
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - number
+   *               - mediaType
+   *               - mediaLocation
+   *             properties:
+   *               number:
+   *                 type: string
+   *                 description: The phone number to send the message to
+   *               mediaType:
+   *                 type: string
+   *                 enum: [url, local]
+   *                 description: Whether the media is from a URL or local file
+   *               mediaLocation:
+   *                 type: string
+   *                 description: The URL or local file path of the image
+   *               caption:
+   *                 type: string
+   *                 description: Optional caption for the image
+   *     responses:
+   *       200:
+   *         description: Media message sent successfully
+   *       400:
+   *         description: Invalid request parameters
+   *       404:
+   *         description: Number not found on WhatsApp
+   *       500:
+   *         description: Server error
+   */
+  router.post('/send/media', async (req: Request, res: Response) => {
+    try {
+      const { number, mediaType, mediaLocation, caption } = req.body;
+
+      // Validate required parameters
+      if (!number || !mediaType || !mediaLocation) {
+        res.status(400).json({ error: 'Number, mediaType, and mediaLocation are required' });
+        return;
+      }
+
+      // Validate mediaType
+      if (mediaType !== 'url' && mediaType !== 'local') {
+        res.status(400).json({ error: 'mediaType must be either "url" or "local"' });
+        return;
+      }
+
+      const result = await whatsappService.sendMediaMessage({
+        number,
+        mediaType,
+        mediaLocation,
+        caption,
+      });
+
+      res.json(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('not ready')) {
+          res.status(503).json({ error: error.message });
+        } else if (error.message.includes('not registered')) {
+          res.status(404).json({ error: error.message });
+        } else {
+          res.status(500).json({
+            error: 'Failed to send media message',
+            details: error.message,
+          });
+        }
+      } else {
+        res.status(500).json({
+          error: 'Failed to send media message',
+          details: String(error),
+        });
+      }
+    }
+  });
+
   return router;
 }
