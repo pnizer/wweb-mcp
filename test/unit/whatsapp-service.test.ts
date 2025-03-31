@@ -28,6 +28,23 @@ jest.mock('whatsapp-web.js/src/structures/GroupChat', () => {
 // Import the mock after mocking
 const _GroupChat = require('whatsapp-web.js/src/structures/GroupChat');
 
+// Mock whatsapp-web.js
+jest.mock('whatsapp-web.js', () => ({
+  Client: jest.fn(),
+  MessageMedia: {
+    fromUrl: jest.fn().mockResolvedValue({
+      mimetype: 'image/jpeg',
+      data: 'base64data',
+      filename: 'test-image.jpg',
+    }),
+    fromFilePath: jest.fn().mockResolvedValue({
+      mimetype: 'image/jpeg',
+      data: 'base64data',
+      filename: 'test-image.jpg',
+    }),
+  },
+}));
+
 describe('WhatsApp Service', () => {
   let mockClient: any;
   let service: WhatsAppService;
@@ -234,7 +251,7 @@ describe('WhatsApp Service', () => {
         added: ['1234567890'],
         failed: [{ number: '0987654321', reason: 'Failed to add participant' }],
       });
-      
+
       // @ts-ignore - we're intentionally mocking the method with a simpler implementation
       service.addParticipantsToGroup = mockImpl;
 
@@ -522,18 +539,18 @@ describe('WhatsApp Service', () => {
     beforeEach(() => {
       // Clear all mocks
       jest.clearAllMocks();
-      
+
       // Reset fs.promises.mkdir mock to resolve successfully
       (fs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
-      
+
       // Mock path.resolve to return a predictable absolute path
       (path.resolve as jest.Mock).mockImplementation((path) => `/absolute${path}`);
-      
+
       // Mock the getMessageById method
       mockClient.getMessageById = jest.fn().mockResolvedValue({
-        id: { 
+        id: {
           id: 'test-message-id',
-          _serialized: 'test-message-id-serialized' 
+          _serialized: 'test-message-id-serialized'
         },
         hasMedia: true,
         downloadMedia: jest.fn().mockResolvedValue({
@@ -542,7 +559,7 @@ describe('WhatsApp Service', () => {
           filename: 'test-image.jpg',
         }),
       });
-      
+
       // Spy on the service method to intercept and mock the fs operations
       jest.spyOn(service, 'downloadMediaFromMessage').mockImplementation(async (messageId, path) => {
         return {
@@ -554,11 +571,11 @@ describe('WhatsApp Service', () => {
         };
       });
     });
-    
+
     it('should download media from a message successfully', async () => {
       // Call the mocked method
       const result = await service.downloadMediaFromMessage('test-message-id-serialized', '/test/path');
-      
+
       // Verify the result matches expected format
       expect(result).toEqual({
         filePath: '/absolute/test/path/test-message-id.jpeg',
@@ -572,10 +589,10 @@ describe('WhatsApp Service', () => {
     it('should throw error when client is not ready', async () => {
       // Restore original implementation for this test
       (service.downloadMediaFromMessage as jest.Mock).mockRestore();
-      
+
       // Set client info to undefined to trigger the error
       mockClient.info = undefined;
-      
+
       await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
         'WhatsApp client not ready'
       );
@@ -584,13 +601,13 @@ describe('WhatsApp Service', () => {
     it('should throw error when message is not found', async () => {
       // Restore original implementation for this test
       (service.downloadMediaFromMessage as jest.Mock).mockRestore();
-      
+
       // Reset the client info
       mockClient.info = { /* mock info */ } as any;
-      
+
       // Mock getMessageById to return null
       mockClient.getMessageById.mockResolvedValue(null);
-      
+
       await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
         'Message with ID test-message-id-serialized not found'
       );
@@ -599,16 +616,16 @@ describe('WhatsApp Service', () => {
     it('should throw error when message does not contain media', async () => {
       // Restore original implementation for this test
       (service.downloadMediaFromMessage as jest.Mock).mockRestore();
-      
+
       // Reset the client info
       mockClient.info = { /* mock info */ } as any;
-      
+
       // Mock a message without media
       mockClient.getMessageById.mockResolvedValue({
         id: { id: 'test-message-id' },
         hasMedia: false,
       });
-      
+
       await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
         'Message with ID test-message-id-serialized does not contain media'
       );
@@ -617,20 +634,215 @@ describe('WhatsApp Service', () => {
     it('should throw error when media download fails', async () => {
       // Restore original implementation for this test
       (service.downloadMediaFromMessage as jest.Mock).mockRestore();
-      
+
       // Reset the client info
       mockClient.info = { /* mock info */ } as any;
-      
+
       // Mock a message with failed media download
       mockClient.getMessageById.mockResolvedValue({
         id: { id: 'test-message-id' },
         hasMedia: true,
         downloadMedia: jest.fn().mockResolvedValue(null),
       });
-      
+
       await expect(service.downloadMediaFromMessage('test-message-id-serialized', '/test/path')).rejects.toThrow(
         'Failed to download media from message test-message-id-serialized'
       );
+    });
+  });
+
+  describe('sendMediaMessage', () => {
+    const validImageUrl = 'https://example.com/image.jpg';
+    const validLocalPath = '/path/to/image.jpg';
+    const validNumber = '1234567890';
+    const mockMessageId = 'mock-message-id';
+
+    beforeEach(() => {
+      // Reset mock implementations
+      mockClient.sendMessage.mockReset();
+      mockClient.sendMessage.mockResolvedValue({ id: { id: mockMessageId } });
+    });
+
+    describe('URL-based image sending', () => {
+      it('should send image from valid URL successfully', async () => {
+        const result = await service.sendMediaMessage({
+          number: validNumber,
+          mediaType: 'url',
+          mediaLocation: validImageUrl,
+          caption: 'Test caption',
+        });
+
+        expect(result).toEqual({
+          messageId: mockMessageId,
+          mediaInfo: expect.objectContaining({
+            mimetype: expect.stringContaining('image/'),
+            filename: expect.any(String),
+          }),
+        });
+        expect(mockClient.sendMessage).toHaveBeenCalled();
+      });
+
+      it('should handle invalid URLs', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('Invalid URL'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'url',
+            mediaLocation: 'invalid-url',
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+
+      it('should handle unsupported image formats', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('Unsupported media type'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'url',
+            mediaLocation: 'https://example.com/file.txt',
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+    });
+
+    describe('Local file-based image sending', () => {
+      it('should send image from valid local path successfully', async () => {
+        const result = await service.sendMediaMessage({
+          number: validNumber,
+          mediaType: 'local',
+          mediaLocation: validLocalPath,
+          caption: 'Test caption',
+        });
+
+        expect(result).toEqual({
+          messageId: mockMessageId,
+          mediaInfo: expect.objectContaining({
+            mimetype: expect.stringContaining('image/'),
+            filename: expect.any(String),
+          }),
+        });
+        expect(mockClient.sendMessage).toHaveBeenCalled();
+      });
+
+      it('should handle invalid file paths', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('File not found'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'local',
+            mediaLocation: '/invalid/path/image.jpg',
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+
+      it('should handle unsupported file formats', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('Unsupported media type'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'local',
+            mediaLocation: '/path/to/file.txt',
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+    });
+
+    describe('Caption functionality', () => {
+      it('should send message with caption', async () => {
+        const caption = 'Test caption';
+        const result = await service.sendMediaMessage({
+          number: validNumber,
+          mediaType: 'url',
+          mediaLocation: validImageUrl,
+          caption,
+        });
+
+        expect(result.messageId).toBe(mockMessageId);
+        expect(mockClient.sendMessage).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.any(Object),
+          expect.objectContaining({ caption })
+        );
+      });
+
+      it('should send message without caption', async () => {
+        const result = await service.sendMediaMessage({
+          number: validNumber,
+          mediaType: 'url',
+          mediaLocation: validImageUrl,
+        });
+
+        expect(result.messageId).toBe(mockMessageId);
+        expect(mockClient.sendMessage).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.any(Object),
+          undefined
+        );
+      });
+    });
+
+    describe('Error scenarios', () => {
+      it('should handle network failures', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('Network error'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'url',
+            mediaLocation: validImageUrl,
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+
+      it('should handle invalid media types', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('Invalid media type'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'url',
+            mediaLocation: 'https://example.com/file.xyz',
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+
+      it('should handle file access issues', async () => {
+        mockClient.sendMessage.mockRejectedValue(new Error('Permission denied'));
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'local',
+            mediaLocation: '/protected/path/image.jpg',
+          })
+        ).rejects.toThrow('Failed to send media message');
+      });
+
+      it('should handle client not ready error', async () => {
+        mockClient.info = undefined;
+
+        await expect(
+          service.sendMediaMessage({
+            number: validNumber,
+            mediaType: 'url',
+            mediaLocation: validImageUrl,
+          })
+        ).rejects.toThrow('WhatsApp client not ready');
+      });
+
+      it('should handle invalid phone number', async () => {
+        await expect(
+          service.sendMediaMessage({
+            number: '',
+            mediaType: 'url',
+            mediaLocation: validImageUrl,
+          })
+        ).rejects.toThrow('Invalid phone number');
+      });
     });
   });
 });

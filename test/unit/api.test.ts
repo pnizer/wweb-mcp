@@ -36,6 +36,7 @@ describe('API Router', () => {
       searchGroups: jest.fn(),
       getGroupById: jest.fn(),
       downloadMediaFromMessage: jest.fn(),
+      sendMediaMessage: jest.fn(),
     } as unknown as jest.Mocked<WhatsAppService>;
     (WhatsAppService as jest.Mock).mockReturnValue(mockWhatsAppService);
 
@@ -524,6 +525,97 @@ describe('API Router', () => {
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toContain('Failed to download media');
+    });
+  });
+
+  describe('POST /api/send/media', () => {
+    it('should send media message successfully', async () => {
+      const mockResult = {
+        messageId: 'msg123',
+        mediaInfo: {
+          mimetype: 'image/jpeg',
+          filename: 'test.jpg',
+          size: 12345
+        }
+      };
+      mockWhatsAppService.sendMediaMessage.mockResolvedValue(mockResult);
+
+      const response = await request(app)
+        .post('/api/send/media')
+        .send({
+          number: '1234567890',
+          mediaType: 'url',
+          mediaLocation: 'https://example.com/image.jpg',
+          caption: 'Test caption'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockResult);
+      expect(mockWhatsAppService.sendMediaMessage).toHaveBeenCalledWith({
+        number: '1234567890',
+        mediaType: 'url',
+        mediaLocation: 'https://example.com/image.jpg',
+        caption: 'Test caption'
+      });
+    });
+
+    it('should handle missing required parameters', async () => {
+      const response = await request(app)
+        .post('/api/send/media')
+        .send({
+          number: '1234567890',
+          // missing mediaType and mediaLocation
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error');
+      expect(mockWhatsAppService.sendMediaMessage).not.toHaveBeenCalled();
+    });
+
+    it('should handle invalid media type', async () => {
+      const response = await request(app)
+        .post('/api/send/media')
+        .send({
+          number: '1234567890',
+          mediaType: 'invalid',
+          mediaLocation: 'https://example.com/image.jpg'
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error');
+      expect(mockWhatsAppService.sendMediaMessage).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      mockWhatsAppService.sendMediaMessage.mockRejectedValue(new Error('Failed to send media'));
+
+      const response = await request(app)
+        .post('/api/send/media')
+        .send({
+          number: '1234567890',
+          mediaType: 'url',
+          mediaLocation: 'https://example.com/image.jpg'
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('error');
+      expect(mockWhatsAppService.sendMediaMessage).toHaveBeenCalled();
+    });
+
+    it('should handle client not ready error', async () => {
+      mockWhatsAppService.sendMediaMessage.mockRejectedValue(new Error('WhatsApp client not ready'));
+
+      const response = await request(app)
+        .post('/api/send/media')
+        .send({
+          number: '1234567890',
+          mediaType: 'url',
+          mediaLocation: 'https://example.com/image.jpg'
+        });
+
+      expect(response.status).toBe(503);
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('not ready');
     });
   });
 });
