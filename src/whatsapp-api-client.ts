@@ -9,6 +9,8 @@ import {
   CreateGroupResponse,
   AddParticipantsResponse,
   MediaResponse,
+  SendMediaMessageParams,
+  SendMediaMessageResponse,
 } from './types';
 
 // Helper function to convert errors to strings
@@ -179,6 +181,25 @@ export class WhatsAppApiClient {
       return response.data;
     } catch (error) {
       throw new Error(`Failed to download media from message: ${errorToString(error)}`);
+    }
+  }
+
+  async sendMediaMessage({
+    number,
+    mediaType,
+    mediaLocation,
+    caption,
+  }: SendMediaMessageParams): Promise<SendMediaMessageResponse> {
+    try {
+      const response = await this.axiosInstance.post('/send/media', {
+        number,
+        mediaType,
+        mediaLocation,
+        caption,
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to send media message: ${errorToString(error)}`);
     }
   }
 }

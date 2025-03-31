@@ -63,3 +63,18 @@ export interface MediaResponse {
   filesize: number;
   messageId: string;
 }
+
+export interface SendMediaMessageParams {
+  number: string;
+  mediaType: 'url' | 'local';
+  mediaLocation: string;
+  caption?: string;
+}
+
+export interface SendMediaMessageResponse extends SendMessageResponse {
+  mediaInfo: {
+    mimetype: string;
+    filename: string;
+    size?: number;
+  };
+}
