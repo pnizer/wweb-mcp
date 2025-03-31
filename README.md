@@ -56,17 +56,17 @@ To learn more about using WhatsApp Web MCP in real-world scenarios, check out th
 
 ### Command Line Options
 
-| Option             | Alias | Description                                           | Choices               | Default                     |
-| ------------------ | ----- | ----------------------------------------------------- | --------------------- | --------------------------- |
-| `--mode`           | `-m`  | Run mode                                              | `mcp`, `whatsapp-api` | `mcp`                       |
-| `--mcp-mode`       | `-c`  | MCP connection mode                                   | `standalone`, `api`   | `standalone`                |
-| `--transport`      | `-t`  | MCP transport mode                                    | `sse`, `command`      | `sse`                       |
-| `--sse-port`       | `-p`  | Port for SSE server                                   | -                     | `3002`                      |
-| `--api-port`       | -     | Port for WhatsApp API server                          | -                     | `3001`                      |
-| `--auth-data-path` | `-a`  | Path to store authentication data                     | -                     | `.wwebjs_auth`              |
-| `--auth-strategy`  | `-s`  | Authentication strategy                               | `local`, `none`       | `local`                     |
-| `--api-base-url`   | `-b`  | API base URL for MCP when using api mode              | -                     | `http://localhost:3001/api` |
-| `--api-key`        | `-k`  | API key for WhatsApp Web REST API when using api mode | -                     | `''`                        |
+| Option | Alias | Description | Choices | Default |
+|--------|-------|-------------|---------|---------|
+| `--mode` | `-m` | Run mode | `mcp`, `whatsapp-api` | `mcp` |
+| `--mcp-mode` | `-c` | MCP connection mode | `standalone`, `api` | `standalone` |
+| `--transport` | `-t` | MCP transport mode | `sse`, `command` | `sse` |
+| `--sse-port` | `-p` | Port for SSE server | - | `3002` |
+| `--api-port` | - | Port for WhatsApp API server | - | `3001` |
+| `--auth-data-path` | `-a` | Path to store authentication data | - | `.wwebjs_auth` |
+| `--auth-strategy` | `-s` | Authentication strategy | `local`, `none` | `local` |
+| `--api-base-url` | `-b` | API base URL for MCP when using api mode | - | `http://localhost:3001/api` |
+| `--api-key` | `-k` | API key for WhatsApp Web REST API when using api mode | - | `''` |
 
 ### API Key Authentication
 
@@ -118,13 +118,13 @@ You can configure webhooks to receive incoming WhatsApp messages by creating a `
 
 #### Configuration Options
 
-| Option                   | Type               | Description                                                                                                           |
-| ------------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `url`                    | String             | The webhook endpoint URL where message data will be sent                                                              |
-| `authToken`              | String (optional)  | Authentication token to be included in the Authorization header as a Bearer token                                     |
-| `filters.allowedNumbers` | Array (optional)   | List of phone numbers to accept messages from. If provided, only messages from these numbers will trigger the webhook |
-| `filters.allowPrivate`   | Boolean (optional) | Whether to send private messages to the webhook. Default: `true`                                                      |
-| `filters.allowGroups`    | Boolean (optional) | Whether to send group messages to the webhook. Default: `true`                                                        |
+| Option | Type | Description |
+|--------|------|-------------|
+| `url` | String | The webhook endpoint URL where message data will be sent |
+| `authToken` | String (optional) | Authentication token to be included in the Authorization header as a Bearer token |
+| `filters.allowedNumbers` | Array (optional) | List of phone numbers to accept messages from. If provided, only messages from these numbers will trigger the webhook |
+| `filters.allowPrivate` | Boolean (optional) | Whether to send private messages to the webhook. Default: `true` |
+| `filters.allowGroups` | Boolean (optional) | Whether to send group messages to the webhook. Default: `true` |
 
 #### Webhook Payload
 
@@ -175,59 +175,60 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
 ### Available Tools
 
-| Tool                          | Description                                             | Parameters                                                                                        |
-| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `get_status`                  | Check WhatsApp client connection status                 | None                                                                                              |
-| `send_message`                | Send messages to WhatsApp contacts                      | `number`: Phone number to send to<br>`message`: Text content to send                              |
-| `search_contacts`             | Search for contacts by name or number                   | `query`: Search term to find contacts                                                             |
-| `get_messages`                | Retrieve messages from a specific chat                  | `number`: Phone number to get messages from<br>`limit` (optional): Number of messages to retrieve |
-| `get_chats`                   | Get a list of all WhatsApp chats                        | None                                                                                              |
-| `create_group`                | Create a new WhatsApp group                             | `name`: Name of the group<br>`participants`: Array of phone numbers to add                        |
-| `add_participants_to_group`   | Add participants to an existing group                   | `groupId`: ID of the group<br>`participants`: Array of phone numbers to add                       |
-| `get_group_messages`          | Retrieve messages from a group                          | `groupId`: ID of the group<br>`limit` (optional): Number of messages to retrieve                  |
-| `send_group_message`          | Send a message to a group                               | `groupId`: ID of the group<br>`message`: Text content to send                                     |
-| `search_groups`               | Search for groups by name, description, or member names | `query`: Search term to find groups                                                               |
-| `get_group_by_id`             | Get detailed information about a specific group         | `groupId`: ID of the group to get                                                                 |
-| `download_media_from_message` | Download media from a message                           | `messageId`: ID of the message containing media to download                                       |
-| `send_media_message`          | Send a media message to a WhatsApp contact              | `number`: Phone number to send to<br>`mediaType`: Source type (`url` or `local`)<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption for the media |
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_status` | Check WhatsApp client connection status | None |
+| `send_message` | Send messages to WhatsApp contacts | `number`: Phone number to send to<br>`message`: Text content to send |
+| `search_contacts` | Search for contacts by name or number | `query`: Search term to find contacts |
+| `get_messages` | Retrieve messages from a specific chat | `number`: Phone number to get messages from<br>`limit` (optional): Number of messages to retrieve |
+| `get_chats` | Get a list of all WhatsApp chats | None |
+| `create_group` | Create a new WhatsApp group | `name`: Name of the group<br>`participants`: Array of phone numbers to add |
+| `add_participants_to_group` | Add participants to an existing group | `groupId`: ID of the group<br>`participants`: Array of phone numbers to add |
+| `get_group_messages` | Retrieve messages from a group | `groupId`: ID of the group<br>`limit` (optional): Number of messages to retrieve |
+| `send_group_message` | Send a message to a group | `groupId`: ID of the group<br>`message`: Text content to send |
+| `search_groups` | Search for groups by name, description, or member names | `query`: Search term to find groups |
+| `get_group_by_id` | Get detailed information about a specific group | `groupId`: ID of the group to get |
+| `download_media_from_message` | Download media from a message | `messageId`: ID of the message containing media to download |
+| `send_media_message` | Send a media message to a WhatsApp contact | `number`: Phone number to send to<br>`mediaType`: Source type (`url` or `local`)<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption for the media |
 
 ### Available Resources
 
-| Resource URI                           | Description                                             |
-| -------------------------------------- | ------------------------------------------------------- |
-| `whatsapp://contacts`                  | List of all WhatsApp contacts                           |
-| `whatsapp://messages/{number}`         | Messages from a specific chat                           |
-| `whatsapp://chats`                     | List of all WhatsApp chats                              |
-| `whatsapp://groups`                    | List of all WhatsApp groups                             |
-| `whatsapp://groups/search`             | Search for groups by name, description, or member names |
-| `whatsapp://groups/{groupId}/messages` | Messages from a specific group                          |
+| Resource URI | Description |
+|--------------|-------------|
+| `whatsapp://contacts` | List of all WhatsApp contacts |
+| `whatsapp://messages/{number}` | Messages from a specific chat |
+| `whatsapp://chats` | List of all WhatsApp chats |
+| `whatsapp://groups` | List of all WhatsApp groups |
+| `whatsapp://groups/search` | Search for groups by name, description, or member names |
+| `whatsapp://groups/{groupId}/messages` | Messages from a specific group |
 
 ### REST API Endpoints
 
 #### Contacts & Messages
 
-| Endpoint                                   | Method | Description                    | Parameters                                        |
-| ------------------------------------------ | ------ | ------------------------------ | ------------------------------------------------- |
-| `/api/status`                              | GET    | Get WhatsApp connection status | None                                              |
-| `/api/contacts`                            | GET    | Get all contacts               | None                                              |
-| `/api/contacts/search`                     | GET    | Search for contacts            | `query`: Search term                              |
-| `/api/chats`                               | GET    | Get all chats                  | None                                              |
-| `/api/messages/{number}`                   | GET    | Get messages from a chat       | `limit` (query): Number of messages               |
-| `/api/send`                                | POST   | Send a message                 | `number`: Recipient<br>`message`: Message content |
-| `/api/send/media`                          | POST   | Send a media message           | `number`: Recipient<br>`mediaType`: `url` or `local`<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption |
-| `/api/messages/{messageId}/media/download` | POST   | Download media from a message  | None                                              |
+| Endpoint | Method | Description | Parameters |
+|----------|--------|-------------|------------|
+| `/api/status` | GET | Get WhatsApp connection status | None |
+| `/api/contacts` | GET | Get all contacts | None |
+| `/api/contacts/search` | GET | Search for contacts | `query`: Search term |
+| `/api/chats` | GET | Get all chats | None |
+| `/api/messages/{number}` | GET | Get messages from a chat | `limit` (query): Number of messages |
+| `/api/send` | POST | Send a message | `number`: Recipient<br>`message`: Message content |
+| `/api/send/media` | POST | Send a media message | `number`: Recipient<br>`mediaType`: `url` or `local`<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption |
+| `/api/messages/{messageId}/media/download` | POST | Download media from a message | None |
 
 #### Group Management
 
-| Endpoint                                 | Method | Description                                     | Parameters                                             |
-| ---------------------------------------- | ------ | ----------------------------------------------- | ------------------------------------------------------ |
-| `/api/groups`                            | GET    | Get all groups                                  | None                                                   |
-| `/api/groups/search`                     | GET    | Search for groups                               | `query`: Search term                                   |
-| `/api/groups/create`                     | POST   | Create a new group                              | `name`: Group name<br>`participants`: Array of numbers |
-| `/api/groups/{groupId}`                  | GET    | Get detailed information about a specific group | None                                                   |
-| `/api/groups/{groupId}/messages`         | GET    | Get messages from a group                       | `limit` (query): Number of messages                    |
-| `/api/groups/{groupId}/participants/add` | POST   | Add members to a group                          | `participants`: Array of numbers                       |
-| `/api/groups/send`                       | POST   | Send a message to a group                       | `groupId`: Group ID<br>`message`: Message content      |
+| Endpoint | Method | Description | Parameters |
+|----------|--------|-------------|------------|
+| `/api/groups` | GET | Get all groups | None |
+| `/api/groups/search` | GET | Search for groups | `query`: Search term |
+| `/api/groups/create` | POST | Create a new group | `name`: Group name<br>`participants`: Array of numbers |
+| `/api/groups/{groupId}` | GET | Get detailed information about a specific group | None |
+| `/api/groups/{groupId}/messages` | GET | Get messages from a group | `limit` (query): Number of messages |
+| `/api/groups/{groupId}/participants/add` | POST | Add members to a group | `participants`: Array of numbers |
+| `/api/groups/send` | POST | Send a message to a group | `groupId`: Group ID<br>`message`: Message content |
 
 ### AI Integration
 
@@ -252,26 +253,20 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 4. Add the following to your Claude Desktop configuration:
    ```json
    {
-     "mcpServers": {
-       "whatsapp": {
-         "command": "npx",
-         "args": [
-           "wweb-mcp",
-           "-m",
-           "mcp",
-           "-s",
-           "local",
-           "-c",
-           "api",
-           "-t",
-           "command",
-           "--api-base-url",
-           "http://localhost:3001/api",
-           "--api-key",
-           "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-         ]
+       "mcpServers": {
+           "whatsapp": {
+               "command": "npx",
+               "args": [
+                   "wweb-mcp",
+                   "-m", "mcp",
+                   "-s", "local",
+                   "-c", "api",
+                   "-t", "command",
+                   "--api-base-url", "http://localhost:3001/api",
+                   "--api-key", "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+               ]
+           }
        }
-     }
    }
    ```
 
@@ -295,29 +290,23 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 
    ```json
    {
-     "mcpServers": {
-       "whatsapp": {
-         "command": "docker",
-         "args": [
-           "run",
-           "-i",
-           "--rm",
-           "wweb-mcp:latest",
-           "-m",
-           "mcp",
-           "-s",
-           "local",
-           "-c",
-           "api",
-           "-t",
-           "command",
-           "--api-base-url",
-           "http://host.docker.internal:3001/api",
-           "--api-key",
-           "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-         ]
+       "mcpServers": {
+           "whatsapp": {
+               "command": "docker",
+               "args": [
+                   "run",
+                   "-i",
+                   "--rm",
+                   "wweb-mcp:latest",
+                   "-m", "mcp",
+                   "-s", "local",
+                   "-c", "api",
+                   "-t", "command",
+                   "--api-base-url", "http://host.docker.internal:3001/api",
+                   "--api-key", "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+               ]
+           }
        }
-     }
    }
    ```
 
