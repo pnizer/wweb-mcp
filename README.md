@@ -62,10 +62,10 @@ To learn more about using WhatsApp Web MCP in real-world scenarios, check out th
 | `--mcp-mode`       | `-c`  | MCP connection mode                                   | `standalone`, `api`   | `standalone`                |
 | `--transport`      | `-t`  | MCP transport mode                                    | `sse`, `command`      | `sse`                       |
 | `--sse-port`       | `-p`  | Port for SSE server                                   | -                     | `7002`                      |
-| `--api-port`       | -     | Port for WhatsApp API server                          | -                     | `7001`                      |
+| `--api-port`       | -     | Port for WhatsApp API server                          | -                     | `3001`                      |
 | `--auth-data-path` | `-a`  | Path to store authentication data                     | -                     | `.wwebjs_auth`              |
 | `--auth-strategy`  | `-s`  | Authentication strategy                               | `local`, `none`       | `local`                     |
-| `--api-base-url`   | `-b`  | API base URL for MCP when using api mode              | -                     | `http://localhost:7001/api` |
+| `--api-base-url`   | `-b`  | API base URL for MCP when using api mode              | -                     | `http://localhost:3001/api` |
 | `--api-key`        | `-k`  | API key for WhatsApp Web REST API when using api mode | -                     | `''`                        |
 
 ### API Key Authentication
@@ -79,7 +79,7 @@ WhatsApp API key: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd
 To connect the MCP server to the WhatsApp API server, you need to provide this API key using the `--api-key` or `-k` option:
 
 ```bash
-npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api --api-key 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
 ```
 
 The API key is stored in the authentication data directory (specified by `--auth-data-path`) and persists between restarts of the WhatsApp API server.
@@ -150,7 +150,7 @@ When a message is received and passes the filters, a POST request will be sent t
 Run a standalone WhatsApp API server that exposes WhatsApp functionality through REST endpoints:
 
 ```bash
-npx wweb-mcp --mode whatsapp-api --api-port 7001
+npx wweb-mcp --mode whatsapp-api --api-port 3001
 ```
 
 #### MCP Server (Standalone)
@@ -167,10 +167,10 @@ Run an MCP server that connects to the WhatsApp API server:
 
 ```bash
 # First, start the WhatsApp API server and note the API key from the logs
-npx wweb-mcp --mode whatsapp-api --api-port 7001
+npx wweb-mcp --mode whatsapp-api --api-port 3001
 
 # Then, start the MCP server with the API key
-npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api --api-key YOUR_API_KEY --transport sse --sse-port 7002
+npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api --api-key YOUR_API_KEY --transport sse --sse-port 7002
 ```
 
 ### Available Tools
@@ -266,7 +266,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api 
            "-t",
            "command",
            "--api-base-url",
-           "http://localhost:7001/api",
+           "http://localhost:3001/api",
            "--api-key",
            "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
          ]
@@ -280,7 +280,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api 
 1. Start WhatsApp API server in Docker:
 
    ```bash
-   docker run -i -p 7001:7001 -v wweb-mcp:/wwebjs_auth --rm wweb-mcp:latest -m whatsapp-api -s local -a /wwebjs_auth
+   docker run -i -p 3001:3001 -v wweb-mcp:/wwebjs_auth --rm wweb-mcp:latest -m whatsapp-api -s local -a /wwebjs_auth
    ```
 
 2. Scan the QR code with your WhatsApp mobile app
@@ -312,7 +312,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:7001/api 
            "-t",
            "command",
            "--api-base-url",
-           "http://host.docker.internal:7001/api",
+           "http://host.docker.internal:3001/api",
            "--api-key",
            "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
          ]

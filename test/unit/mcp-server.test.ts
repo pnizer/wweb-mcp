@@ -115,7 +115,7 @@ describe('MCP Server', () => {
   it('should use WhatsApp API client when useApiClient is true', () => {
     const config: McpConfig = {
       useApiClient: true,
-      apiBaseUrl: 'http://localhost:7001',
+      apiBaseUrl: 'http://localhost:3001',
     };
 
     createMcpServer(config);
