@@ -68,7 +68,7 @@ export interface SendMediaMessageParams {
   number: string;
   mediaType: 'url' | 'local';
   mediaLocation: string;
-  caption?: string;
+  caption: string;
 }
 
 export interface SendMediaMessageResponse extends SendMessageResponse {

@@ -593,7 +593,7 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
       number: z.string().describe('The phone number to send the message to'),
       mediaType: z.enum(['url', 'local']).describe('Whether the media is from a URL or local file'),
       mediaLocation: z.string().describe('The URL or local file path of the image'),
-      caption: z.string().optional().describe('Optional caption for the image'),
+      caption: z.string().default('').describe('Caption for the image'),
     },
     async ({ number, mediaType, mediaLocation, caption }) => {
       try {
