@@ -657,5 +657,77 @@ export function routerFactory(client: Client): Router {
     }
   });
 
+  /**
+   * @swagger
+   * /api/send/media:
+   *   post:
+   *     summary: Send a media message to a WhatsApp contact
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - number
+   *               - source
+   *             properties:
+   *               number:
+   *                 type: string
+   *                 description: The phone number to send the message to
+   *               source:
+   *                 type: string
+   *                 description: The source of the media - URLs must use http:// or https:// prefixes, local files must use file:// prefix (e.g., 'https://example.com/image.jpg' or 'file:///path/to/image.jpg')
+   *               caption:
+   *                 type: string
+   *                 description: caption for the media
+   *     responses:
+   *       200:
+   *         description: Media message sent successfully
+   *       400:
+   *         description: Invalid request parameters
+   *       404:
+   *         description: Number not found on WhatsApp
+   *       500:
+   *         description: Server error
+   */
+  router.post('/send/media', async (req: Request, res: Response) => {
+    try {
+      const { number, source, caption = '' } = req.body;
+
+      // Validate required parameters
+      if (!number || !source) {
+        res.status(400).json({ error: 'Number and source are required' });
+        return;
+      }
+
+      const result = await whatsappService.sendMediaMessage({
+        number,
+        source,
+        caption,
+      });
+
+      res.json(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('not ready')) {
+          res.status(503).json({ error: error.message });
+        } else if (error.message.includes('not registered')) {
+          res.status(404).json({ error: error.message });
+        } else {
+          res.status(500).json({
+            error: 'Failed to send media message',
+            details: error.message,
+          });
+        }
+      } else {
+        res.status(500).json({
+          error: 'Failed to send media message',
+          details: String(error),
+        });
+      }
+    }
+  });
+
   return router;
 }
