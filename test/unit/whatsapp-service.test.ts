@@ -653,7 +653,7 @@ describe('WhatsApp Service', () => {
 
   describe('sendMediaMessage', () => {
     const validImageUrl = 'https://example.com/image.jpg';
-    const validLocalPath = '/path/to/image.jpg';
+    const validLocalPath = 'file:///path/to/image.jpg';
     const validNumber = '1234567890';
     const mockMessageId = 'mock-message-id';
 
@@ -667,8 +667,7 @@ describe('WhatsApp Service', () => {
       it('should send image from valid URL successfully', async () => {
         const result = await service.sendMediaMessage({
           number: validNumber,
-          mediaType: 'url',
-          mediaLocation: validImageUrl,
+          source: validImageUrl,
           caption: 'Test caption',
         });
 
@@ -688,10 +687,9 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'url',
-            mediaLocation: 'invalid-url',
+            source: 'invalid-url',
           })
-        ).rejects.toThrow('Failed to send media message');
+        ).rejects.toThrow('Invalid source format');
       });
 
       it('should handle unsupported image formats', async () => {
@@ -700,8 +698,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'url',
-            mediaLocation: 'https://example.com/file.txt',
+            source: 'https://example.com/file.txt',
           })
         ).rejects.toThrow('Failed to send media message');
       });
@@ -711,8 +708,7 @@ describe('WhatsApp Service', () => {
       it('should send image from valid local path successfully', async () => {
         const result = await service.sendMediaMessage({
           number: validNumber,
-          mediaType: 'local',
-          mediaLocation: validLocalPath,
+          source: validLocalPath,
           caption: 'Test caption',
         });
 
@@ -732,8 +728,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'local',
-            mediaLocation: '/invalid/path/image.jpg',
+            source: 'file:///invalid/path/image.jpg',
           })
         ).rejects.toThrow('Failed to send media message');
       });
@@ -744,8 +739,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'local',
-            mediaLocation: '/path/to/file.txt',
+            source: 'file:///path/to/file.txt',
           })
         ).rejects.toThrow('Failed to send media message');
       });
@@ -756,8 +750,7 @@ describe('WhatsApp Service', () => {
         const caption = 'Test caption';
         const result = await service.sendMediaMessage({
           number: validNumber,
-          mediaType: 'url',
-          mediaLocation: validImageUrl,
+          source: validImageUrl,
           caption,
         });
 
@@ -772,8 +765,7 @@ describe('WhatsApp Service', () => {
       it('should send message without caption', async () => {
         const result = await service.sendMediaMessage({
           number: validNumber,
-          mediaType: 'url',
-          mediaLocation: validImageUrl,
+          source: validImageUrl,
         });
 
         expect(result.messageId).toBe(mockMessageId);
@@ -792,8 +784,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'url',
-            mediaLocation: validImageUrl,
+            source: validImageUrl,
           })
         ).rejects.toThrow('Failed to send media message');
       });
@@ -804,8 +795,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'url',
-            mediaLocation: 'https://example.com/file.xyz',
+            source: 'https://example.com/file.xyz',
           })
         ).rejects.toThrow('Failed to send media message');
       });
@@ -816,8 +806,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'local',
-            mediaLocation: '/protected/path/image.jpg',
+            source: 'file:///protected/path/image.jpg',
           })
         ).rejects.toThrow('Failed to send media message');
       });
@@ -828,8 +817,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: validNumber,
-            mediaType: 'url',
-            mediaLocation: validImageUrl,
+            source: validImageUrl,
           })
         ).rejects.toThrow('WhatsApp client not ready');
       });
@@ -838,8 +826,7 @@ describe('WhatsApp Service', () => {
         await expect(
           service.sendMediaMessage({
             number: '',
-            mediaType: 'url',
-            mediaLocation: validImageUrl,
+            source: validImageUrl,
           })
         ).rejects.toThrow('Invalid phone number');
       });

@@ -66,9 +66,8 @@ export interface MediaResponse {
 
 export interface SendMediaMessageParams {
   number: string;
-  mediaType: 'url' | 'local';
-  mediaLocation: string;
-  caption: string;
+  source: string;  // URI scheme format: URLs must use http:// or https:// prefixes, local files must use file:// prefix
+  caption?: string;
 }
 
 export interface SendMediaMessageResponse extends SendMessageResponse {

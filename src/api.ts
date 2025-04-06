@@ -670,22 +670,17 @@ export function routerFactory(client: Client): Router {
    *             type: object
    *             required:
    *               - number
-   *               - mediaType
-   *               - mediaLocation
+   *               - source
    *             properties:
    *               number:
    *                 type: string
    *                 description: The phone number to send the message to
-   *               mediaType:
+   *               source:
    *                 type: string
-   *                 enum: [url, local]
-   *                 description: Whether the media is from a URL or local file
-   *               mediaLocation:
-   *                 type: string
-   *                 description: The URL or local file path of the image
+   *                 description: The source of the media - URLs must use http:// or https:// prefixes, local files must use file:// prefix (e.g., 'https://example.com/image.jpg' or 'file:///path/to/image.jpg')
    *               caption:
    *                 type: string
-   *                 description: Optional caption for the image
+   *                 description: caption for the media
    *     responses:
    *       200:
    *         description: Media message sent successfully
@@ -698,24 +693,17 @@ export function routerFactory(client: Client): Router {
    */
   router.post('/send/media', async (req: Request, res: Response) => {
     try {
-      const { number, mediaType, mediaLocation, caption } = req.body;
+      const { number, source, caption = '' } = req.body;
 
       // Validate required parameters
-      if (!number || !mediaType || !mediaLocation) {
-        res.status(400).json({ error: 'Number, mediaType, and mediaLocation are required' });
-        return;
-      }
-
-      // Validate mediaType
-      if (mediaType !== 'url' && mediaType !== 'local') {
-        res.status(400).json({ error: 'mediaType must be either "url" or "local"' });
+      if (!number || !source) {
+        res.status(400).json({ error: 'Number and source are required' });
         return;
       }
 
       const result = await whatsappService.sendMediaMessage({
         number,
-        mediaType,
-        mediaLocation,
+        source,
         caption,
       });
 

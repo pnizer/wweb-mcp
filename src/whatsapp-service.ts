@@ -523,8 +523,7 @@ export class WhatsAppService {
 
   async sendMediaMessage({
     number,
-    mediaType,
-    mediaLocation,
+    source,
     caption,
   }: SendMediaMessageParams): Promise<SendMediaMessageResponse> {
     try {
@@ -540,17 +539,22 @@ export class WhatsAppService {
       // Format the chat ID
       const chatId = number.includes('@c.us') ? number : `${number}@c.us`;
 
-      // Create MessageMedia based on mediaType
+      // Create MessageMedia based on source URI scheme
       let media: MessageMedia;
       try {
-        if (mediaType === 'url') {
-          media = await MessageMedia.fromUrl(mediaLocation);
+        if (source.startsWith('http://') || source.startsWith('https://')) {
+          // URL source
+          media = await MessageMedia.fromUrl(source);
+        } else if (source.startsWith('file://')) {
+          // Local file source (remove file:// prefix)
+          const filePath = source.replace(/^file:\/\//, '');
+          media = await MessageMedia.fromFilePath(filePath);
         } else {
-          media = await MessageMedia.fromFilePath(mediaLocation);
+          throw new Error('Invalid source format. URLs must use http:// or https:// prefixes (e.g., https://example.com/image.jpg), local files must use file:// prefix (e.g., file:///path/to/image.jpg)');
         }
       } catch (error) {
         throw new Error(
-          `Failed to load media from ${mediaType}: ${
+          `Failed to load media from ${source}: ${
             error instanceof Error ? error.message : String(error)
           }`,
         );

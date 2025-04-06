@@ -186,15 +186,13 @@ export class WhatsAppApiClient {
 
   async sendMediaMessage({
     number,
-    mediaType,
-    mediaLocation,
+    source,
     caption,
   }: SendMediaMessageParams): Promise<SendMediaMessageResponse> {
     try {
       const response = await this.axiosInstance.post('/send/media', {
         number,
-        mediaType,
-        mediaLocation,
+        source,
         caption,
       });
       return response.data;

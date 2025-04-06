@@ -544,8 +544,7 @@ describe('API Router', () => {
         .post('/api/send/media')
         .send({
           number: '1234567890',
-          mediaType: 'url',
-          mediaLocation: 'https://example.com/image.jpg',
+          source: 'https://example.com/image.jpg',
           caption: 'Test caption'
         });
 
@@ -553,8 +552,7 @@ describe('API Router', () => {
       expect(response.body).toEqual(mockResult);
       expect(mockWhatsAppService.sendMediaMessage).toHaveBeenCalledWith({
         number: '1234567890',
-        mediaType: 'url',
-        mediaLocation: 'https://example.com/image.jpg',
+        source: 'https://example.com/image.jpg',
         caption: 'Test caption'
       });
     });
@@ -564,7 +562,7 @@ describe('API Router', () => {
         .post('/api/send/media')
         .send({
           number: '1234567890',
-          // missing mediaType and mediaLocation
+          // missing source
         });
 
       expect(response.status).toBe(400);
@@ -572,18 +570,19 @@ describe('API Router', () => {
       expect(mockWhatsAppService.sendMediaMessage).not.toHaveBeenCalled();
     });
 
-    it('should handle invalid media type', async () => {
+    it('should handle invalid source format', async () => {
+      mockWhatsAppService.sendMediaMessage.mockRejectedValue(new Error('Invalid source format'));
+
       const response = await request(app)
         .post('/api/send/media')
         .send({
           number: '1234567890',
-          mediaType: 'invalid',
-          mediaLocation: 'https://example.com/image.jpg'
+          source: 'invalid-format-without-scheme'
         });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('error');
-      expect(mockWhatsAppService.sendMediaMessage).not.toHaveBeenCalled();
+      expect(mockWhatsAppService.sendMediaMessage).toHaveBeenCalled();
     });
 
     it('should handle service errors', async () => {
@@ -593,8 +592,7 @@ describe('API Router', () => {
         .post('/api/send/media')
         .send({
           number: '1234567890',
-          mediaType: 'url',
-          mediaLocation: 'https://example.com/image.jpg'
+          source: 'https://example.com/image.jpg'
         });
 
       expect(response.status).toBe(500);
@@ -609,8 +607,7 @@ describe('API Router', () => {
         .post('/api/send/media')
         .send({
           number: '1234567890',
-          mediaType: 'url',
-          mediaLocation: 'https://example.com/image.jpg'
+          source: 'https://example.com/image.jpg'
         });
 
       expect(response.status).toBe(503);
