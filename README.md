@@ -190,7 +190,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `search_groups` | Search for groups by name, description, or member names | `query`: Search term to find groups |
 | `get_group_by_id` | Get detailed information about a specific group | `groupId`: ID of the group to get |
 | `download_media_from_message` | Download media from a message | `messageId`: ID of the message containing media to download |
-| `send_media_message` | Send a media message to a WhatsApp contact | `number`: Phone number to send to<br>`mediaType`: Source type (`url` or `local`)<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption for the media |
+| `send_media_message` | Send a media message to a WhatsApp contact | `number`: Phone number to send to<br>`source`: Media source with URI scheme (use `http://` or `https://` for URLs, `file://` for local files)<br>`caption` (optional): Text caption for the media |
 
 ### Available Resources
 
@@ -215,7 +215,7 @@ npx wweb-mcp --mode mcp --mcp-mode api --api-base-url http://localhost:3001/api 
 | `/api/chats` | GET | Get all chats | None |
 | `/api/messages/{number}` | GET | Get messages from a chat | `limit` (query): Number of messages |
 | `/api/send` | POST | Send a message | `number`: Recipient<br>`message`: Message content |
-| `/api/send/media` | POST | Send a media message | `number`: Recipient<br>`mediaType`: `url` or `local`<br>`mediaLocation`: URL or file path<br>`caption` (optional): Text caption |
+| `/api/send/media` | POST | Send a media message | `number`: Recipient<br>`source`: Media source with URI scheme (use `http://` or `https://` for URLs, `file://` for local files)<br>`caption` (optional): Text caption |
 | `/api/messages/{messageId}/media/download` | POST | Download media from a message | None |
 
 #### Group Management
