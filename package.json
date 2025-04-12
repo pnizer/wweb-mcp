@@ -36,9 +36,9 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@types/mime-types": "^2.1.4",
-    "@types/node": "^20.13.1",
+    "@types/node": "^20.17.28",
     "@types/qrcode-terminal": "^0.12.2",
     "@types/supertest": "^6.0.2",
     "@types/yargs": "^17.0.33",

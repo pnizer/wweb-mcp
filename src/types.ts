@@ -63,3 +63,17 @@ export interface MediaResponse {
   filesize: number;
   messageId: string;
 }
+
+export interface SendMediaMessageParams {
+  number: string;
+  source: string;  // URI scheme format: URLs must use http:// or https:// prefixes, local files must use file:// prefix
+  caption?: string;
+}
+
+export interface SendMediaMessageResponse extends SendMessageResponse {
+  mediaInfo: {
+    mimetype: string;
+    filename: string;
+    size?: number;
+  };
+}
