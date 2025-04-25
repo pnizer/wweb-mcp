@@ -1,3 +1,5 @@
+[![MseeP Badge](https://mseep.net/pr/pnizer-wweb-mcp-badge.jpg)](https://mseep.ai/app/pnizer-wweb-mcp)
+
 # WhatsApp Web MCP
 
 [![PR Checks](https://github.com/pnizer/wweb-mcp/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/pnizer/wweb-mcp/actions/workflows/pr-checks.yml)
