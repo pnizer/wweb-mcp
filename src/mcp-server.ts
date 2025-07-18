@@ -591,7 +591,11 @@ export function createMcpServer(config: McpConfig = {}, client: Client | null = 
     'send_media_message',
     {
       number: z.string().describe('The phone number to send the message to'),
-      source: z.string().describe('The source of the media - URLs must use http:// or https:// prefixes, local files must use file:// prefix'),
+      source: z
+        .string()
+        .describe(
+          'The source of the media - URLs must use http:// or https:// prefixes, local files must use file:// prefix',
+        ),
       caption: z.string().default('').describe('Caption for the media'),
     },
     async ({ number, source, caption }) => {

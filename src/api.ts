@@ -8,7 +8,9 @@ export function routerFactory(client: Client): Router {
   const whatsappService = new WhatsAppService(client);
 
   // Get the media storage path from the client configuration
-  const mediaStoragePath = (client as any).options?.mediaStoragePath || '.wwebjs_auth/media';
+  const mediaStoragePath =
+    (client as { options?: { mediaStoragePath?: string } }).options?.mediaStoragePath ||
+    '.wwebjs_auth/media';
 
   /**
    * @swagger

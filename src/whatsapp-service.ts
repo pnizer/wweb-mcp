@@ -206,7 +206,7 @@ export class WhatsAppService {
       } else if (result && typeof result === 'object') {
         // Safely access properties
         groupId = result.gid && result.gid._serialized ? result.gid._serialized : '';
-        inviteCode = (result as any).inviteCode;
+        inviteCode = (result as { inviteCode?: string }).inviteCode;
       }
 
       return {
@@ -355,8 +355,8 @@ export class WhatsAppService {
         return await window.WWebJS.getChats();
       });
       const groupChats: GroupChat[] = rawChats
-        .filter((chat: any) => chat.groupMetadata)
-        .map((chat: any) => {
+        .filter((chat: { groupMetadata?: unknown }) => chat.groupMetadata)
+        .map((chat: { groupMetadata?: unknown; isGroup?: boolean }) => {
           chat.isGroup = true;
           return new _GroupChat(this.client, chat);
         });
@@ -367,7 +367,8 @@ export class WhatsAppService {
         groupChats.map(async chat => ({
           id: chat.id._serialized,
           name: chat.name,
-          description: ((chat as any).groupMetadata || {}).subject || '',
+          description:
+            ((chat as { groupMetadata?: { subject?: string } }).groupMetadata || {}).subject || '',
           participants: await Promise.all(
             chat.participants.map(async participant => ({
               id: participant.id._serialized,
@@ -405,7 +406,8 @@ export class WhatsAppService {
       return {
         id: chat.id._serialized,
         name: chat.name,
-        description: ((chat as any).groupMetadata || {}).subject || '',
+        description:
+          ((chat as { groupMetadata?: { subject?: string } }).groupMetadata || {}).subject || '',
         participants: await Promise.all(
           chat.participants.map(async (participant: GroupParticipant) => ({
             id: participant.id._serialized,
@@ -550,7 +552,9 @@ export class WhatsAppService {
           const filePath = source.replace(/^file:\/\//, '');
           media = await MessageMedia.fromFilePath(filePath);
         } else {
-          throw new Error('Invalid source format. URLs must use http:// or https:// prefixes (e.g., https://example.com/image.jpg), local files must use file:// prefix (e.g., file:///path/to/image.jpg)');
+          throw new Error(
+            'Invalid source format. URLs must use http:// or https:// prefixes (e.g., https://example.com/image.jpg), local files must use file:// prefix (e.g., file:///path/to/image.jpg)',
+          );
         }
       } catch (error) {
         throw new Error(
